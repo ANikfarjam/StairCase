@@ -3,11 +3,11 @@ import numpy as np
 import random
 # Define color dictionary
 color_dic = {
-    1: 'red',
-    2: 'blue',
-    3: 'green',
-    4: 'yellow',
-    0: 'gray'
+    1: 'red', #wordle challenge
+    2: 'blue', # trivia challenge
+    3: 'green', # gain coins
+    4: 'yellow', # wheel of fortune
+    0: 'gray' # neutral
 }
 
 # Define RGB values for Pygame
@@ -26,7 +26,7 @@ clock = pygame.time.Clock()
 cell_size = 60  # Size of each cell in the grid
 
 # Create the board with the required distribution
-def generate_board():
+def generate_board(board):
     total_cells = 100
     green_count = 40
     other_count = total_cells - green_count
@@ -41,7 +41,7 @@ def generate_board():
     random.shuffle(color_list)  # Shuffle the board
 
     return np.array(color_list).reshape(10, 10)
-def initialize(board, img):
+def initialize(board, player1, player2, dice, challenges):
     pygame.draw.rect()
 board = generate_board()
 running = True
