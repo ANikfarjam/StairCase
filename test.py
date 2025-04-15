@@ -9,6 +9,9 @@ screen = pygame.display.set_mode((800, 800))
 pygame.display.set_caption("Snakes & Ladders")
 clock = pygame.time.Clock()
 
+# Graphics Assets
+sky_background = pygame.image.load('graphics/blue-sky.png')
+
 # Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -17,12 +20,14 @@ BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
 GRAY = (200, 200, 200)
 YELLOW = (255, 255, 0)
+LIGHT_YELLOW = (255, 255, 200)
+ORANGE = (255, 200, 0)
 
 # Game constants
 BOARD_SIZE = 10
 CELL_SIZE = 60
 GRID_OFFSET = 100
-PLAYER_SIZE = 20
+PLAYER_SIZE = 15
 BUTTON_WIDTH = 150
 BUTTON_HEIGHT = 50
 
@@ -55,12 +60,23 @@ small_font = pygame.font.SysFont(None, 24)
 
 def draw_board():
     screen.fill(WHITE)
+    screen.blit(sky_background, (0,0))
     
     # Draw grid
     for row in range(BOARD_SIZE):
         for col in range(BOARD_SIZE):
             x = col * CELL_SIZE + GRID_OFFSET
             y = (BOARD_SIZE - 1 - row) * CELL_SIZE + GRID_OFFSET
+            
+            # Alternate colors like a chess board
+            if (row + col) % 2 == 0:
+                color = LIGHT_YELLOW
+            else:
+                color = ORANGE
+            
+            # Draw filled square
+            pygame.draw.rect(screen, color, (x, y, CELL_SIZE, CELL_SIZE))
+            # Draw square border
             pygame.draw.rect(screen, BLACK, (x, y, CELL_SIZE, CELL_SIZE), 1)
             
             # Draw cell number
