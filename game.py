@@ -3,6 +3,7 @@ import numpy as np
 import random
 # Define color dictionary
 color_dic = {
+
     1: 'red', #wordle challenge
     2: 'blue', # trivia challenge
     3: 'green', # gain coins
