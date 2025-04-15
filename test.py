@@ -124,7 +124,7 @@ def move_player(player_pos, steps):
     return new_pos, f"Player {current_player} moved {steps} steps to position {new_pos+1}"
 
 def draw_button():
-    button_rect = pygame.Rect(20, 700, BUTTON_WIDTH, BUTTON_HEIGHT)
+    button_rect = pygame.Rect(330, 720, BUTTON_WIDTH, BUTTON_HEIGHT)
     pygame.draw.rect(screen, YELLOW, button_rect)
     pygame.draw.rect(screen, BLACK, button_rect, 2)
     
@@ -142,12 +142,12 @@ def draw_game_info():
     # Draw game over message
     if game_over:
         winner_text = font.render(f"Player {winner} wins!", True, BLACK)
-        screen.blit(winner_text, (20, 60))
+        screen.blit(winner_text, (20, 50))
     
     # Draw message if active
     if message_timer > 0:
         message_text = font.render(message, True, BLACK)
-        screen.blit(message_text, (20, 100))
+        screen.blit(message_text, (20, 70))
 
 # Main game loop
 while True:
