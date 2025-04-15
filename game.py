@@ -3,11 +3,12 @@ import numpy as np
 import random
 # Define color dictionary
 color_dic = {
-    1: 'red', #wordle cahllange
-    2: 'blue', # trivia challanfe
+
+    1: 'red', #wordle challenge
+    2: 'blue', # trivia challenge
     3: 'green', # gain coins
     4: 'yellow', # wheel of fortune
-    0: 'gray' #nutrual 
+    0: 'gray' # neutral
 }
 
 # Define RGB values for Pygame
