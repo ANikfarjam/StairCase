@@ -45,22 +45,38 @@ message_duration = 120  # frames (2 seconds at 60 FPS)
 
 # Animation state
 animating = False
-animation_speed = 0.1  # Speed of animation (0.1 = 10% of the way each frame)
+animation_speed = 0.15  # Speed of animation (0.1 = 10% of the way each frame)
 current_anim_pos = [0, 0]  # Current animation position
 target_anim_pos = [0, 0]   # Target animation position
 
 # Create snakes and ladders (random positions)
-# snakes = {}
-# ladders = {}
-# for _ in range(5):  # 5 snakes
-#     start = random.randint(1, 98)
-#     end = random.randint(1, start-1)
-#     snakes[end] = start
+snakes = {}
+ladders = {}
+used_positions = set()  # Track all used positions
 
-# for _ in range(5):  # 5 ladders
-#     start = random.randint(1, 98)
-#     end = random.randint(start+1, 99)
-#     ladders[start] = end
+# Create snakes
+for _ in range(5):
+    while True:
+        start = random.randint(4, 98)
+        end = random.randint(2, start-1)
+        # Check if positions are already used
+        if start not in used_positions and end not in used_positions:
+            snakes[start] = end
+            used_positions.add(start)
+            used_positions.add(end)
+            break
+
+# Create ladders
+for _ in range(5):
+    while True:
+        start = random.randint(2, 97)
+        end = random.randint(start+1, 99)
+        # Check if positions are already used
+        if start not in used_positions and end not in used_positions:
+            ladders[start] = end
+            used_positions.add(start)
+            used_positions.add(end)
+            break
 
 # Font for text
 font = pygame.font.SysFont(None, 36)
@@ -106,6 +122,46 @@ def draw_board():
             #     l_text = small_font.render("L", True, GREEN)
             #     l_rect = l_text.get_rect(center=(x + CELL_SIZE//2, y + CELL_SIZE//2 + 15))
             #     screen.blit(l_text, l_rect)
+def draw_snakes_ladders():
+    for row in range(BOARD_SIZE):
+        for col in range(BOARD_SIZE):
+            x = col * CELL_SIZE + GRID_OFFSET
+            y = (BOARD_SIZE - 1 - row) * CELL_SIZE + GRID_OFFSET
+            cell_num = row * BOARD_SIZE + col + 1
+
+
+            if cell_num in snakes:
+                # Draw snake head (start position)
+                pygame.draw.circle(screen, RED, (x + CELL_SIZE//2, y + CELL_SIZE//2), 5)
+                # Draw "S" for snake
+                s_text = small_font.render("S", True, RED)
+                s_rect = s_text.get_rect(center=(x + CELL_SIZE//2, y + CELL_SIZE//2 + 15))
+                screen.blit(s_text, s_rect)
+                
+                # Get end position coordinates
+                end_x, end_y = get_cell_position(snakes[cell_num])
+                # Draw snake body (line from start to end)
+                pygame.draw.line(screen, RED, (x + CELL_SIZE//2, y + CELL_SIZE//2), 
+                               (end_x, end_y), 3)
+                # Draw circle at end position
+                pygame.draw.circle(screen, RED, (end_x, end_y), 5)
+                
+            elif cell_num in ladders:
+                # Draw ladder bottom (start position)
+                pygame.draw.circle(screen, GREEN, (x + CELL_SIZE//2, y + CELL_SIZE//2), 5)
+                # Draw "L" for ladder
+                l_text = small_font.render("L", True, GREEN)
+                l_rect = l_text.get_rect(center=(x + CELL_SIZE//2, y + CELL_SIZE//2 + 15))
+                screen.blit(l_text, l_rect)
+                
+                # Get end position coordinates
+                end_x, end_y = get_cell_position(ladders[cell_num])
+                # Draw ladder (two parallel lines)
+                pygame.draw.line(screen, GREEN, (x + CELL_SIZE//2 - 5, y + CELL_SIZE//2), 
+                               (end_x, end_y), 3)
+                # Draw circle at end position
+                pygame.draw.circle(screen, GREEN, (end_x, end_y), 5)
+
 
 def get_cell_position(pos):
     row = (pos - 1) // BOARD_SIZE
@@ -263,6 +319,9 @@ while True:
         screen.blit(welcome_message, welcome_message_rect)
 
         start_button_rect = draw_start_button()
+
+        print(snakes)
+        print(ladders)
     else:
         # Update message timer
         if message_timer > 0:
@@ -273,6 +332,7 @@ while True:
         
         # Draw everything
         draw_board()
+        draw_snakes_ladders()
         draw_players()
         draw_game_info()
         button_rect = draw_dice_button()
