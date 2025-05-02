@@ -1,0 +1,84 @@
+.dashboard-container {
+    padding: 2rem;
+    text-align: center;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(to bottom, #fff0f5, #ffffff);
+    min-height: 100vh;
+  }
+  
+  .dashboard-container h2 {
+    font-size: 2.2rem;
+    background: linear-gradient(to right, #a64ac9, #ff758c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .card-container {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+  }
+  
+  .os-card {
+    background: #fff;
+    border-radius: 1.25rem;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    width: 280px;
+    text-align: center;
+    transition: transform 0.3s ease;
+  }
+  
+  .os-card:hover {
+    transform: translateY(-6px);
+  }
+  
+  .os-card h3 {
+    margin: 1rem 0 0.5rem;
+    color: #a64ac9;
+    font-weight: 600;
+  }
+  
+  .os-card p {
+    color: #555;
+    font-size: 0.95rem;
+    margin: 0.5rem 0;
+  }
+  
+  .download-btn {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(to right, #a64ac9, #ff758c);
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 0.6rem;
+    text-decoration: none;
+    transition: background 0.3s ease;
+  }
+  
+  .download-btn:hover {
+    background: linear-gradient(to right, #b84ae0, #ff6c80);
+  }
+  
+  .os-icon {
+    font-size: 3.5rem;
+    color: #a64ac9;
+    margin-bottom: 0.5rem;
+  }
+  
+  .windows {
+    border-top: 5px solid #0078D7;
+  }
+  
+  .macos {
+    border-top: 5px solid #333;
+  }
+  
+  .user {
+    border-top: 5px solid #4caf50;
+  }
+  
