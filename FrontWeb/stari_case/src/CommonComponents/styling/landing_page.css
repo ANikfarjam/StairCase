@@ -1,0 +1,104 @@
+.landing-container {
+    min-height: 100vh;
+    background: linear-gradient(to bottom, #FFF6F6, #ffe5ec, #fff0f5);
+    font-family: 'Segoe UI', sans-serif;
+    padding-top: 3rem;
+  }
+  
+  .landing-hero {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+    padding: 2rem;
+  }
+  
+  .landing-title {
+    font-size: 3rem;
+    font-weight: 800;
+    color: #6A0DAD;
+    margin-bottom: 1rem;
+  }
+  
+  .landing-highlight {
+    color: #FF6B81;
+  }
+  
+  .landing-subtext {
+    color: #444;
+    font-size: 1.2rem;
+    max-width: 700px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .game-review-section {
+    width: 100%;
+    background: linear-gradient(to right, #ffe5ec, #fff0f5);
+    padding: 2rem 1rem;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .landing-subtext2 {
+    color: #333;
+    font-size: 1.15rem;
+    max-width: 1000px;
+    background: rgba(255, 255, 255, 0.5);
+    padding: 1.5rem;
+    border-radius: 1rem;
+    line-height: 1.75;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
+  
+  .landing-button {
+    margin-top: 1.5rem;
+    padding: 0.75rem 2rem;
+    background-color: #FF6B81;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 9999px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: background-color 0.3s ease;
+    display: inline-block;
+    text-decoration: none;
+  }
+  
+  .landing-button:hover {
+    background-color: #ff4d6d;
+  }
+  
+  .combined-banner {
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    margin-top: 2rem;
+  }
+  
+  .image-with-logo {
+    display: flex;
+    width: 100%;
+    max-height: 350px;
+    justify-content: space-evenly;
+    align-items: center;
+    padding: 0 2rem;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+  
+  .banner-image {
+    flex: 1;
+    max-height: 350px;
+    width: 100%;
+    object-fit: cover;
+    border-radius: 1rem;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  }
+  
+  .banner-logo {
+    max-height: 200px;
+    width: auto;
+    object-fit: contain;
+  }
+  

@@ -2,7 +2,7 @@ import pygame
 import requests
 from sys import exit
 
-SERVER_URL = "http://localhost:5000"
+SERVER_URL = "http://127.0.0.1:5000"
 player_id = None
 
 def join_game():

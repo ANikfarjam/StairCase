@@ -5,5 +5,5 @@ This is an ancient Persian game bringing friends and family together. We decided
 
 ### <span style="color: green">How to play this game?</span>
 
-This is an old school board game similar to Snakes & Ladders where the goal is to make it to the end faster than others. There are obstacles as well as rewards. The gameboard is an NxN grid. In random places there will be ladders that take you ahead and snakes that push you back. Since we are creating a digital version of this game, we are aiming to add extra elements to this game such as random mini challenges (ex: Trivia, Wordle) and effects (ex: rolling pairs allows you to go again) that rewards players. You earn coins for winning, and there is a shop that allows you to unlock new background themes. 
+This is an old school board game similar to Snakes & Ladders where the goal is to make it to the end faster than others. There are obstacles as well as rewards. The gameboard is an NxN grid. In random places there will be ladders that take you ahead and snakes that push you back. Since we are creating a digital version of this game, we are aiming to add extra elements to this game such as random mini challenges, such Trivia and Hangman, and effects (ex: rolling pairs allows you to go again) that rewards players. You earn coins for winning, and there is a shop that allows you to unlock new background themes. 
 
