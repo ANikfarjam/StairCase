@@ -3,6 +3,7 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 from BackEnd.Routers.StartingGameRout import start_BP
+from BackEnd.Routers.menue_rout import menue_bp
 #initiate app and define cores
 
 app = Flask(__name__)
@@ -15,5 +16,6 @@ app.register_blueprint(rout)
 """
 #register start game API
 app.register_blueprint(start_BP)
+app.register_blueprint(menue_bp)
 if __name__ == '__main__':
     app.run(debug=True)
