@@ -81,6 +81,7 @@ def join():
 
 @start_BP.route("/roll", methods=["POST"])
 def roll():
+    global current_player, game_over, winner, message
     data = request.get_json()
     player_id = data.get("player_id")
     if player_id not in players:
@@ -144,10 +145,14 @@ def roll():
 
 @start_BP.route("/state", methods=["GET"])
 def state():
+    # Convert snake and ladder keys to integers
+    snakes_int = {int(k): int(v) for k, v in snakes.items()}
+    ladders_int = {int(k): int(v) for k, v in ladders.items()}
+    
     return jsonify({
         "players": players,
-        "snakes": snakes,
-        "ladders": ladders,
+        "snakes": snakes_int,
+        "ladders": ladders_int,
         "trivia_cells": list(trivia_cells),
         "hangman_cells": list(hangman_cells),
         "current_player": current_player,

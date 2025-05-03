@@ -3,8 +3,6 @@ import numpy as np
 import random
 from sys import exit
 
-# Test
-
 # Initialize Pygame
 pygame.init()
 screen = pygame.display.set_mode((800, 800))

@@ -45,6 +45,8 @@ def get_state():
     return requests.get(f"{SERVER_URL}/state").json()
 
 def get_cell_coords(pos):
+    # Ensure pos is an integer
+    pos = int(pos)
     row = 9 - (pos // 10)
     col = pos % 10 if (9 - row) % 2 == 0 else 9 - (pos % 10)
     return col * CELL_SIZE + GRID_OFFSET, row * CELL_SIZE + GRID_OFFSET
