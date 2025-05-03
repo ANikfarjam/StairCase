@@ -1,6 +1,11 @@
+---
+title: Readme
+marimo-version: 0.12.2
+---
+
 # Goal
 
-we are aiming to make this game playable on multiple devices at the same time 
+we are aiming to make this game playable on multiple devices at the same time
 
 ### What we Need for Multiplayer Hosting
 
@@ -24,21 +29,21 @@ The Flask app manages game state, handles player turns, updates the board, etc.
         |                                   HTTP/WebSocket
         |                                   (same API routes)
         v
-+------------------+                                 
-|   Player 2 GUI   |                                 
++------------------+
+|   Player 2 GUI   |
 | (Pygame client)  |
 +------------------+
 ```
 
 
-🖥 Server (Flask)	
+🖥 Server (Flask)
 
 - Track player positions
 - Roll dice
 - Trigger and store mini-games per player
 - Serve board state
 
-🧑‍💻 Client (Pygame)	
+🧑‍💻 Client (Pygame)
 
 - Draw the board
 - Send player moves

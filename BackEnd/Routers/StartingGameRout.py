@@ -48,13 +48,18 @@ def join():
         player_id = f"player_{len(players)+1}"
         players[player_id] = 0
         player_turn_order.append(player_id)
-        print(f"✅ /join called → {player_id}")
+        print(f"/join called → {player_id}")
         return jsonify({"player_id": player_id})
     except Exception as e:
-        print("❌ ERROR in /join:", str(e))
+        print("ERROR in /join:", str(e))
         return jsonify({"error": "Server failed"}), 500
 
-
+"""
+Roll Dice
+Calculates and return the new position of each player
+triggers game events
+returns the contents of the mini games
+"""
 @start_BP.route("/roll", methods=["POST"])
 def roll():
     data = request.get_json()
@@ -87,7 +92,11 @@ def roll():
         "mini_game": mini_game,
         "content": content
     })
-
+"""
+Return the board states
+snakes and ladders positoins
+trivia and hangman minigame positions
+"""
 @start_BP.route("/state", methods=["GET"])
 def state():
     return jsonify({
