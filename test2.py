@@ -46,8 +46,8 @@ message_duration = 120  # frames (2 seconds at 60 FPS)
 # Animation state
 animating = False
 animation_speed = 0.15  # Speed of animation (0.1 = 10% of the way each frame)
-current_anim_pos = [0, 0]  # Current animation position
-target_anim_pos = [0, 0]   # Target animation position
+current_anim_pos = [0, 0]
+target_anim_pos = [0, 0]
 
 # Create snakes and ladders (random positions)
 snakes = {}
@@ -178,12 +178,22 @@ def draw_players():
         x1, y1 = get_cell_position(player1_pos + 1)
     pygame.draw.circle(screen, RED, (x1 - 10, y1), PLAYER_SIZE)
     
+    # Draw player 1 number
+    player1_text = small_font.render("1", True, WHITE)
+    player1_text_rect = player1_text.get_rect(center=(x1 - 10, y1))
+    screen.blit(player1_text, player1_text_rect)
+    
     # Draw player 2
     if current_player == 2 and animating:
         x2, y2 = current_anim_pos
     else:
         x2, y2 = get_cell_position(player2_pos + 1)
     pygame.draw.circle(screen, BLUE, (x2 + 10, y2), PLAYER_SIZE)
+    
+    # Draw player 2 number
+    player2_text = small_font.render("2", True, WHITE)
+    player2_text_rect = player2_text.get_rect(center=(x2 + 10, y2))
+    screen.blit(player2_text, player2_text_rect)
 
 def roll_dice():
     return random.randint(1, 6)

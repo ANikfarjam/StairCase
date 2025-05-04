@@ -5,11 +5,11 @@ try:
     from Agent.TriviaLC import triviaAgent
     from Agent.HangmanLC import HangMan
     trivia_agent = triviaAgent()
-    hangman_agent = HangMan()
+    # hangman_agent = HangMan() # doesn't work for now
 except Exception as e:
     print("Error initializing agents:", e)
     trivia_agent = None
-    hangman_agent = None
+    # hangman_agent = None # doesn't work for now
 
 start_BP = Blueprint("Start_Game", __name__)
 
@@ -79,6 +79,12 @@ def join():
         print("❌ ERROR in /join:", str(e))
         return jsonify({"error": "Server failed"}), 500
 
+"""
+Roll Dice
+Calculates and return the new position of each player
+triggers game events
+returns the contents of the mini games
+"""
 @start_BP.route("/roll", methods=["POST"])
 def roll():
     global current_player, game_over, winner, message
@@ -128,9 +134,9 @@ def roll():
         mini_game = "trivia"
         topics = ['Sports', 'literature', 'Movies', 'Celebrities', 'Music', 'general knowledge']
         content = trivia_agent.envoke(random.choice(topics))
-    elif cell in hangman_cells and hangman_agent:
-        mini_game = "hangman"
-        content = hangman_agent.envoke()
+    # elif cell in hangman_cells and hangman_agent: # doesn't work for now
+    #     mini_game = "hangman"
+    #     content = hangman_agent.envoke()
 
     return jsonify({
         "roll": roll_val,
@@ -143,6 +149,11 @@ def roll():
         "current_player": current_player
     })
 
+"""
+Return the board states
+snakes and ladders positoins
+trivia and hangman minigame positions
+"""
 @start_BP.route("/state", methods=["GET"])
 def state():
     # Convert snake and ladder keys to integers

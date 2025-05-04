@@ -157,14 +157,35 @@ def main():
             color = RED if pid == player_id else BLUE
             offset = -10 if pid == player_id else 10
             pygame.draw.circle(screen, color, (x + CELL_SIZE//2 + offset, y + CELL_SIZE//2), PLAYER_SIZE)
+            
+            # Draw player number
+            player_num = "1" if pid == player_id else "2"
+            player_text = small_font.render(player_num, True, WHITE)
+            player_text_rect = player_text.get_rect(center=(x + CELL_SIZE//2 + offset, y + CELL_SIZE//2))
+            screen.blit(player_text, player_text_rect)
         
         # Modal box
         if modal:
-            pygame.draw.rect(screen, GRAY, (100, 600, 600, 150))
+            # Calculate modal box dimensions and position
+            modal_width = 600
+            modal_height = 300
+            modal_x = (800 - modal_width) // 2  # Center horizontally
+            modal_y = (800 - modal_height) // 2  # Center vertically
+            
+            # Draw modal background with border
+            pygame.draw.rect(screen, GRAY, (modal_x, modal_y, modal_width, modal_height))
+            pygame.draw.rect(screen, BLACK, (modal_x, modal_y, modal_width, modal_height), 2)
+            
+            # Split text into lines and render each line
             lines = modal.split("\n")
-            for i, line in enumerate(lines[:5]):
-                text = font.render(line, True, BLACK)
-                screen.blit(text, (120, 620 + i * 25))
+            line_height = 30  # Space between lines
+            start_y = modal_y + 20  # Start text 20 pixels from top of modal
+            
+            for i, line in enumerate(lines):
+                if i * line_height < modal_height - 40:  # Only show lines that fit in the modal
+                    text = font.render(line, True, BLACK)
+                    text_rect = text.get_rect(centerx=modal_x + modal_width//2, y=start_y + i * line_height)
+                    screen.blit(text, text_rect)
         
         pygame.display.update()
         pygame.time.delay(100)
