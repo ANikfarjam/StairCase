@@ -98,17 +98,20 @@ def roll():
         return jsonify({"error": "Not your turn"}), 400
 
     roll_val = random.randint(1, 6)
+    before_roll = players[player_id]
     pos = players[player_id] + roll_val
+
+    print(f"Player {current_player} rolled a : {roll_val}, moving from {before_roll + 1} to {pos + 1}")
     
     # Check for snakes and ladders
-    if pos in ladders:
-        old_pos = pos
-        pos = ladders[pos]
-        message = f"Player {current_player} climbed a ladder from {old_pos+1} to {pos+1}!"
-    elif pos in snakes:
-        old_pos = pos
-        pos = snakes[pos]
-        message = f"Player {current_player} was bitten by a snake and moved from {old_pos+1} to {pos+1}!"
+    if (pos + 1) in ladders:
+        old_pos = pos + 1
+        pos = ladders[pos + 1] - 1
+        message = f"Player {current_player} climbed a ladder from {old_pos} to {pos + 1}!"
+    elif (pos + 1) in snakes:
+        old_pos = pos + 1
+        pos = snakes[pos + 1] - 1
+        message = f"Player {current_player} was bitten by a snake and moved from {old_pos} to {pos + 1}!"
     else:
         message = f"Player {current_player} moved {roll_val} steps to position {pos+1}"
     

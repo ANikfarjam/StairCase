@@ -155,6 +155,9 @@ def main():
     join_game()
     state = get_state()
     modal = ""
+
+    print(state['snakes'])
+    print(state['ladders'])
     
     while True:
         screen.fill(WHITE)
