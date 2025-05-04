@@ -24,6 +24,9 @@ BUTTON_HEIGHT = 50
 SERVER_URL = "http://127.0.0.1:5000"
 player_id = None
 
+font = pygame.font.SysFont(None, 36)
+small_font = pygame.font.SysFont(None, 24)
+
 def join_game():
     global player_id
     try:
@@ -47,9 +50,14 @@ def get_state():
 def get_cell_coords(pos):
     # Ensure pos is an integer
     pos = int(pos)
-    row = 9 - (pos // 10)
-    col = pos % 10 if (9 - row) % 2 == 0 else 9 - (pos % 10)
-    return col * CELL_SIZE + GRID_OFFSET, row * CELL_SIZE + GRID_OFFSET
+    row = (pos - 1) // BOARD_SIZE
+    col = (pos - 1) % BOARD_SIZE
+    x = col * CELL_SIZE + GRID_OFFSET + CELL_SIZE//2
+    y = (BOARD_SIZE - 1 - row) * CELL_SIZE + GRID_OFFSET + CELL_SIZE//2
+    return x, y
+    # row = 9 - (pos // 10)
+    # col = pos % 10 if (9 - row) % 2 == 0 else 9 - (pos % 10)
+    # return col * CELL_SIZE + GRID_OFFSET, row * CELL_SIZE + GRID_OFFSET
 
 def draw_board(screen, state):
     # Draw grid
@@ -153,15 +161,16 @@ def main():
         
         # Draw players
         for pid, pos in state["players"].items():
-            x, y = get_cell_coords(pos)
+            x, y = get_cell_coords(pos + 1)
             color = RED if pid == player_id else BLUE
             offset = -10 if pid == player_id else 10
-            pygame.draw.circle(screen, color, (x + CELL_SIZE//2 + offset, y + CELL_SIZE//2), PLAYER_SIZE)
-            
+            # pygame.draw.circle(screen, color, (x + CELL_SIZE//2 + offset, y + CELL_SIZE//2), PLAYER_SIZE)
+            pygame.draw.circle(screen, color, (x + offset, y), PLAYER_SIZE)
             # Draw player number
             player_num = "1" if pid == player_id else "2"
             player_text = small_font.render(player_num, True, WHITE)
-            player_text_rect = player_text.get_rect(center=(x + CELL_SIZE//2 + offset, y + CELL_SIZE//2))
+            # player_text_rect = player_text.get_rect(center=(x + CELL_SIZE//2 + offset, y + CELL_SIZE//2))
+            player_text_rect = player_text.get_rect(center=(x + offset, y))
             screen.blit(player_text, player_text_rect)
         
         # Modal box
