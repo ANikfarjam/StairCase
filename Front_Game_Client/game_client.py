@@ -24,9 +24,6 @@ BUTTON_HEIGHT = 50
 SERVER_URL = "http://127.0.0.1:5000"
 player_id = None
 
-font = pygame.font.SysFont(None, 36)
-small_font = pygame.font.SysFont(None, 24)
-
 def join_game():
     global player_id
     try:
@@ -84,21 +81,43 @@ def draw_board(screen, state):
             screen.blit(text, text_rect)
 
 def draw_snakes_ladders(screen, state):
-    for start, end in state["snakes"].items():
-        start_x, start_y = get_cell_coords(start)
-        end_x, end_y = get_cell_coords(end)
-        pygame.draw.line(screen, RED, (start_x + CELL_SIZE//2, start_y + CELL_SIZE//2), 
-                        (end_x + CELL_SIZE//2, end_y + CELL_SIZE//2), 3)
-        pygame.draw.circle(screen, RED, (start_x + CELL_SIZE//2, start_y + CELL_SIZE//2), 5)
-        pygame.draw.circle(screen, RED, (end_x + CELL_SIZE//2, end_y + CELL_SIZE//2), 5)
-        
-    for start, end in state["ladders"].items():
-        start_x, start_y = get_cell_coords(start)
-        end_x, end_y = get_cell_coords(end)
-        pygame.draw.line(screen, GREEN, (start_x + CELL_SIZE//2, start_y + CELL_SIZE//2), 
-                        (end_x + CELL_SIZE//2, end_y + CELL_SIZE//2), 3)
-        pygame.draw.circle(screen, GREEN, (start_x + CELL_SIZE//2, start_y + CELL_SIZE//2), 5)
-        pygame.draw.circle(screen, GREEN, (end_x + CELL_SIZE//2, end_y + CELL_SIZE//2), 5)
+    for row in range(BOARD_SIZE):
+        for col in range(BOARD_SIZE):
+            x = col * CELL_SIZE + GRID_OFFSET
+            y = (BOARD_SIZE - 1 - row) * CELL_SIZE + GRID_OFFSET
+            cell_num = row * BOARD_SIZE + col + 1
+
+            if str(cell_num) in state["snakes"]:
+                # Draw snake head (start position)
+                pygame.draw.circle(screen, RED, (x + CELL_SIZE//2, y + CELL_SIZE//2), 5)
+                # Draw "S" for snake
+                s_text = small_font.render("S", True, RED)
+                s_rect = s_text.get_rect(center=(x + CELL_SIZE//2, y + CELL_SIZE//2 + 15))
+                screen.blit(s_text, s_rect)
+                
+                # Get end position coordinates
+                end_x, end_y = get_cell_coords(state["snakes"][str(cell_num)])
+                # Draw snake body (line from start to end)
+                pygame.draw.line(screen, RED, (x + CELL_SIZE//2, y + CELL_SIZE//2), 
+                               (end_x, end_y), 3)
+                # Draw circle at end position
+                pygame.draw.circle(screen, RED, (end_x, end_y), 5)
+                
+            elif str(cell_num) in state["ladders"]:
+                # Draw ladder bottom (start position)
+                pygame.draw.circle(screen, GREEN, (x + CELL_SIZE//2, y + CELL_SIZE//2), 5)
+                # Draw "L" for ladder
+                l_text = small_font.render("L", True, GREEN)
+                l_rect = l_text.get_rect(center=(x + CELL_SIZE//2, y + CELL_SIZE//2 + 15))
+                screen.blit(l_text, l_rect)
+                
+                # Get end position coordinates
+                end_x, end_y = get_cell_coords(state["ladders"][str(cell_num)])
+                # Draw ladder (line from start to end)
+                pygame.draw.line(screen, GREEN, (x + CELL_SIZE//2, y + CELL_SIZE//2), 
+                               (end_x, end_y), 3)
+                # Draw circle at end position
+                pygame.draw.circle(screen, GREEN, (end_x, end_y), 5)
 
 def draw_dice_button(screen):
     button_rect = pygame.Rect(330, 720, BUTTON_WIDTH, BUTTON_HEIGHT)
@@ -129,7 +148,7 @@ def main():
     pygame.init()
     screen = pygame.display.set_mode((800, 800))
     pygame.display.set_caption("Snakes & Ladders")
-    global font
+    global font, small_font
     font = pygame.font.SysFont(None, 36)
     small_font = pygame.font.SysFont(None, 24)
     

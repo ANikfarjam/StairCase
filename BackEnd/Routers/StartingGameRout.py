@@ -4,7 +4,7 @@ import random
 try:
     from Agent.TriviaLC import triviaAgent
     from Agent.HangmanLC import HangMan
-    trivia_agent = triviaAgent()
+    # trivia_agent = triviaAgent()
     # hangman_agent = HangMan() # doesn't work for now
 except Exception as e:
     print("Error initializing agents:", e)
@@ -130,10 +130,10 @@ def roll():
     mini_game = None
     content = ""
 
-    if cell in trivia_cells and trivia_agent:
-        mini_game = "trivia"
-        topics = ['Sports', 'literature', 'Movies', 'Celebrities', 'Music', 'general knowledge']
-        content = trivia_agent.envoke(random.choice(topics))
+    # if cell in trivia_cells and trivia_agent:
+    #     mini_game = "trivia"
+    #     topics = ['Sports', 'literature', 'Movies', 'Celebrities', 'Music', 'general knowledge']
+    #     content = trivia_agent.envoke(random.choice(topics))
     # elif cell in hangman_cells and hangman_agent: # doesn't work for now
     #     mini_game = "hangman"
     #     content = hangman_agent.envoke()
@@ -156,14 +156,14 @@ trivia and hangman minigame positions
 """
 @start_BP.route("/state", methods=["GET"])
 def state():
-    # Convert snake and ladder keys to integers
-    snakes_int = {int(k): int(v) for k, v in snakes.items()}
-    ladders_int = {int(k): int(v) for k, v in ladders.items()}
+    # Convert snake and ladder keys to strings
+    snakes_str = {str(k): str(v) for k, v in snakes.items()}
+    ladders_str = {str(k): str(v) for k, v in ladders.items()}
     
     return jsonify({
         "players": players,
-        "snakes": snakes_int,
-        "ladders": ladders_int,
+        "snakes": snakes_str,
+        "ladders": ladders_str,
         "trivia_cells": list(trivia_cells),
         "hangman_cells": list(hangman_cells),
         "current_player": current_player,
