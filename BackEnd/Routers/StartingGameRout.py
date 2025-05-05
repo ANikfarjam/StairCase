@@ -4,12 +4,12 @@ import random
 try:
     from Agent.TriviaLC import triviaAgent
     from Agent.HangmanLC import HangMan
-    # trivia_agent = triviaAgent()
-    # hangman_agent = HangMan() # doesn't work for now
+    trivia_agent = triviaAgent()
+    hangman_agent = HangMan() # doesn't work for now
 except Exception as e:
     print("Error initializing agents:", e)
     trivia_agent = None
-    # hangman_agent = None # doesn't work for now
+    hangman_agent = None # doesn't work for now
 
 start_BP = Blueprint("Start_Game", __name__)
 
@@ -146,13 +146,13 @@ def roll():
     mini_game = None
     content = ""
 
-    # if cell in trivia_cells and trivia_agent:
-    #     mini_game = "trivia"
-    #     topics = ['Sports', 'literature', 'Movies', 'Celebrities', 'Music', 'general knowledge']
-    #     content = trivia_agent.envoke(random.choice(topics))
-    # elif cell in hangman_cells and hangman_agent: # doesn't work for now
-    #     mini_game = "hangman"
-    #     content = hangman_agent.envoke()
+    if cell in trivia_cells and trivia_agent:
+        mini_game = "trivia"
+        topics = ['Sports', 'literature', 'Movies', 'Celebrities', 'Music', 'general knowledge']
+        content = trivia_agent.envoke(random.choice(topics))
+    elif cell in hangman_cells and hangman_agent: # doesn't work for now
+        mini_game = "hangman"
+        content = hangman_agent.envoke()
 
     return jsonify({
         "roll": roll_val,
