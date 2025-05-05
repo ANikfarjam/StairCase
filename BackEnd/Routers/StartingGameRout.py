@@ -103,13 +103,26 @@ def roll():
 
     print(f"Player {current_player} rolled a : {roll_val}, moving from {before_roll + 1} to {pos + 1}")
     
+    # Initialize animation data
+    animation_data = {
+        "snake_ladder": False,
+        "snake_ladder_start": None,
+        "snake_ladder_end": None
+    }
+    
     # Check for snakes and ladders
     if (pos + 1) in ladders:
         old_pos = pos + 1
+        animation_data["snake_ladder"] = True
+        animation_data["snake_ladder_start"] = old_pos
+        animation_data["snake_ladder_end"] = ladders[pos + 1]
         pos = ladders[pos + 1] - 1
         message = f"Player {current_player} climbed a ladder from {old_pos} to {pos + 1}!"
     elif (pos + 1) in snakes:
         old_pos = pos + 1
+        animation_data["snake_ladder"] = True
+        animation_data["snake_ladder_start"] = old_pos
+        animation_data["snake_ladder_end"] = snakes[pos + 1]
         pos = snakes[pos + 1] - 1
         message = f"Player {current_player} was bitten by a snake and moved from {old_pos} to {pos + 1}!"
     else:
@@ -143,13 +156,15 @@ def roll():
 
     return jsonify({
         "roll": roll_val,
+        "before_roll": before_roll,
         "new_position": pos,
         "mini_game": mini_game,
         "content": content,
         "message": message,
         "game_over": game_over,
         "winner": winner,
-        "current_player": current_player
+        "current_player": current_player,
+        **animation_data  # Include animation data in response
     })
 
 """
