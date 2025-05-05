@@ -5,11 +5,11 @@ try:
     from Agent.TriviaLC import triviaAgent
     from Agent.HangmanLC import HangMan
     trivia_agent = triviaAgent()
-    hangman_agent = HangMan() # doesn't work for now
+    # hangman_agent = HangMan() # doesn't work for now
 except Exception as e:
     print("Error initializing agents:", e)
     trivia_agent = None
-    hangman_agent = None # doesn't work for now
+    # hangman_agent = None # doesn't work for now
 
 start_BP = Blueprint("Start_Game", __name__)
 
@@ -30,13 +30,15 @@ ladders = {}
 trivia_cells = set()
 hangman_cells = set()
 used_positions = set()
+total_cells = list(range(1, 99))
 
 def init_board():
     global snakes, ladders, trivia_cells, hangman_cells, used_positions
     snakes.clear()
     ladders.clear()
     used_positions.clear()
-    total_cells = list(range(1, 99))
+    trivia_cells.clear()
+    hangman_cells.clear()
 
     # Create snakes
     for _ in range(5):
@@ -63,7 +65,7 @@ def init_board():
     # Initialize minigame cells
     random.shuffle(total_cells)
     trivia_cells.update(total_cells[:15])
-    hangman_cells.update(total_cells[15:30])
+    # hangman_cells.update(total_cells[15:30])
 
 init_board()
 
@@ -150,9 +152,9 @@ def roll():
         mini_game = "trivia"
         topics = ['Sports', 'literature', 'Movies', 'Celebrities', 'Music', 'general knowledge']
         content = trivia_agent.envoke(random.choice(topics))
-    elif cell in hangman_cells and hangman_agent: # doesn't work for now
-        mini_game = "hangman"
-        content = hangman_agent.envoke()
+    # elif cell in hangman_cells and hangman_agent: # doesn't work for now
+    #     mini_game = "hangman"
+    #     content = hangman_agent.envoke()
 
     return jsonify({
         "roll": roll_val,
@@ -189,3 +191,48 @@ def state():
         "winner": winner,
         "message": message
     })
+
+@start_BP.route("/submit_answer", methods=["POST"])
+def submit_answer():
+    try:
+        data = request.get_json()
+        player_id = data.get("player_id")
+        answer = data.get("answer")
+        
+        if not player_id or not answer:
+            return jsonify({"error": "Missing player_id or answer"}), 400
+            
+        # Check if it's a trivia question
+        if trivia_agent:
+            is_correct = trivia_agent.check_answer(answer)
+            return jsonify({
+                "correct": is_correct,
+                "message": "Correct answer!" if is_correct else "Incorrect answer!"
+            })
+        else:
+            return jsonify({"error": "Trivia agent not available"}), 500
+            
+    except Exception as e:
+        print("❌ ERROR in /submit_answer:", str(e))
+        return jsonify({"error": "Server failed"}), 500
+
+@start_BP.route('/restart', methods=['POST'])
+def restart_game():
+    global player1_pos, player2_pos, current_player, game_over, winner, message, message_timer, animating, current_anim_pos, target_anim_pos, trivia_cells, hangman_cells
+    
+    for pid, pos in players.items():
+        players[pid] = 0
+
+    current_player = 1
+    game_over = False
+    winner = None
+    message = ""
+    message_timer = 0
+    animating = False
+    current_anim_pos = [0, 0]
+    target_anim_pos = [0, 0]
+    
+    # Reinitialize trivia and hangman cells
+    init_board()
+    
+    return jsonify({"status": "success"})

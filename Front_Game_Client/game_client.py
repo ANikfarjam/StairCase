@@ -4,7 +4,6 @@ from sys import exit
 import time
 import math
 
-
 # Constants
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -44,6 +43,13 @@ animation_phase = 1  # 1 for first phase, 2 for second phase
 # Background state
 background_x = 0
 sky_background = pygame.image.load('graphics/blue-sky.png')
+
+# Add these variables near the top with other game state variables
+user_answer = ""
+active_modal = None  # 'trivia', 'hangman', or None
+
+screen = pygame.display.set_mode((800, 800))
+
 
 def join_game():
     global player_id
@@ -102,6 +108,18 @@ def get_cell_coords(pos):
     # col = pos % 10 if (9 - row) % 2 == 0 else 9 - (pos % 10)
     # return col * CELL_SIZE + GRID_OFFSET, row * CELL_SIZE + GRID_OFFSET
 
+def draw_start_button():
+    button_rect = pygame.Rect(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT)
+    button_rect.center = (400, 400)
+    pygame.draw.rect(screen, YELLOW, button_rect)
+    pygame.draw.rect(screen, BLACK, button_rect, 2)
+    
+    button_text = font.render("Start", True, BLACK)
+    text_rect = button_text.get_rect(center=button_rect.center)
+    screen.blit(button_text, text_rect)
+
+    return button_rect
+
 def draw_board(screen, state):
     global background_x
     
@@ -120,23 +138,28 @@ def draw_board(screen, state):
         for col in range(BOARD_SIZE):
             x = col * CELL_SIZE + GRID_OFFSET
             y = (BOARD_SIZE - 1 - row) * CELL_SIZE + GRID_OFFSET
+            cell_num = row * BOARD_SIZE + col + 1
             
             # Alternate colors like a chess board
-            if (row + col) % 2 == 0:
-                color = LIGHT_YELLOW
-            else:
-                color = ORANGE
-            
+            # if (row + col) % 2 == 0:
+            #     color = LIGHT_YELLOW
+            # else:
+            #     color = ORANGE
+
+            color = BLUE if cell_num in state["trivia_cells"] else YELLOW if cell_num in state["hangman_cells"] else LIGHT_YELLOW if (row + col) % 2 == 0 else ORANGE
             # Draw filled square
             pygame.draw.rect(screen, color, (x, y, CELL_SIZE, CELL_SIZE))
             # Draw square border
             pygame.draw.rect(screen, BLACK, (x, y, CELL_SIZE, CELL_SIZE), 1)
             
             # Draw cell number
-            cell_num = row * BOARD_SIZE + col + 1
+
             text = font.render(str(cell_num), True, BLACK)
             text_rect = text.get_rect(center=(x + CELL_SIZE//2, y + CELL_SIZE//2))
             screen.blit(text, text_rect)
+            
+            if cell_num in state["trivia_cells"]:
+                screen.blit(small_font.render("T", True, WHITE), (x + CELL_SIZE//2 - 5, y + CELL_SIZE//2 + 15))
 
 def draw_snakes_ladders(screen, state):
     for row in range(BOARD_SIZE):
@@ -260,14 +283,50 @@ def draw_players(screen, state):
         player_text_rect = player_text.get_rect(center=(draw_x, draw_y))
         screen.blit(player_text, player_text_rect)
 
+def draw_modal(screen, modal, modal_x, modal_y, modal_width, modal_height):
+    # Draw modal background with border
+    pygame.draw.rect(screen, GRAY, (modal_x, modal_y, modal_width, modal_height))
+    pygame.draw.rect(screen, BLACK, (modal_x, modal_y, modal_width, modal_height), 2)
+    
+    # Split text into lines and render each line
+    lines = modal.split("\n")
+    line_height = 30  # Space between lines
+    start_y = modal_y + 20  # Start text 20 pixels from top of modal
+    
+    for i, line in enumerate(lines):
+        if i * line_height < modal_height - 40:  # Only show lines that fit in the modal
+            text = font.render(line, True, BLACK)
+            text_rect = text.get_rect(centerx=modal_x + modal_width//2, y=start_y + i * line_height)
+            screen.blit(text, text_rect)
+    
+    # Draw user input if trivia modal is active
+    if active_modal == "trivia":
+        input_text = small_font.render(f"Your answer: {user_answer}", True, BLUE)
+        screen.blit(input_text, (modal_x + 20, modal_y + modal_height - 60))
+    
+    # Draw continue message
+    continue_text = small_font.render("Press ENTER to continue...", True, BLACK)
+    screen.blit(continue_text, (modal_x + 20, modal_y + modal_height - 30))
+
+def draw_restart_button():
+    button_rect = pygame.Rect(380, 720, BUTTON_WIDTH, BUTTON_HEIGHT)
+    pygame.draw.rect(screen, ORANGE, button_rect)
+    pygame.draw.rect(screen, BLACK, button_rect, 2)
+
+    button_text = font.render("Restart Game", True, BLACK)
+    text_rect = button_text.get_rect(center=button_rect.center)
+    screen.blit(button_text, text_rect)
+
+    return button_rect
+
 def main():
     pygame.init()
     clock = pygame.time.Clock()
-    screen = pygame.display.set_mode((800, 800))
     pygame.display.set_caption("Snakes & Ladders")
-    global font, small_font
+    global font, small_font, user_answer, active_modal
     font = pygame.font.SysFont(None, 36)
     small_font = pygame.font.SysFont(None, 24)
+    homescreen = True
     
     join_game()
     state = get_state()
@@ -293,28 +352,76 @@ def main():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
+            
+            # Handle modal input
+            if modal:
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        # Submit answer and close modal
+                        if active_modal == "trivia":
+                            # Send answer to server
+                            res = requests.post(f"{SERVER_URL}/submit_answer", json={
+                                "player_id": player_id,
+                                "answer": user_answer
+                            })
+                            print(res.json())
+                            user_answer = ""  # Clear answer
+                        modal = ""  # Close modal
+                        active_modal = None
+                    elif event.key == pygame.K_BACKSPACE:
+                        user_answer = user_answer[:-1]
+                    elif event.unicode.isprintable():
+                        user_answer += event.unicode
+            
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Left mouse button
                     mouse_pos = pygame.mouse.get_pos()
-                    button_rect = draw_dice_button(screen, state)
-                    if button_rect and button_rect.collidepoint(mouse_pos) and not animating:  # Only allow rolling when not animating
-                        result = roll_dice()
-                        modal = result.get("content", "")
-                        state = get_state()
-                        last_state_update = time.time()
+                    if not state['game_over']:  # Only check for dice button when game is not over
+                        button_rect = draw_dice_button(screen, state)
+                        if button_rect and button_rect.collidepoint(mouse_pos) and not animating:  # Only allow rolling when not animating
+                            result = roll_dice()
+                            modal = result.get("content", "")
+                            if modal:  # If there's a modal, set the active modal type
+                                active_modal = result.get("mini_game", None)
+                            state = get_state()
+                            last_state_update = time.time()
+                    elif state['game_over']:  # Check for restart button click when game is over
+                        restart_button_rect = draw_restart_button()
+                        if restart_button_rect.collidepoint(mouse_pos):
+                            # Send restart request to server
+                            res = requests.post(f"{SERVER_URL}/restart")
+                            if res.status_code == 200:
+                                state = get_state()
+                                last_state_update = time.time()
+            if event.type == pygame.MOUSEBUTTONDOWN and homescreen:
+                mouse_pos = pygame.mouse.get_pos()
+                start_button_rect = draw_start_button()
+
+                if start_button_rect.collidepoint(mouse_pos):
+                    homescreen = False
         
         # Draw game elements
-        draw_board(screen, state)
-        draw_snakes_ladders(screen, state)
-        draw_dice_button(screen, state)
-        draw_game_info(screen, state)
-        draw_player_identification(screen)
+        if homescreen:
+            screen.fill((94, 129, 162))
+            welcome_message = font.render(f'Welcome to StairCase', True, (111, 196, 169))
+            welcome_message_rect = welcome_message.get_rect(center = (400, 200))
+            screen.blit(welcome_message, welcome_message_rect)
+
+            start_button_rect = draw_start_button()
+        else:
+            draw_board(screen, state)
+            draw_snakes_ladders(screen, state)
+            if not state['game_over']:
+                draw_dice_button(screen, state)
+            draw_game_info(screen, state)
+            draw_player_identification(screen)
         
-        # Draw players
-        draw_players(screen, state)
-        
-        # Update animation
-        update_animation()
+            draw_players(screen, state)
+            update_animation()
+            
+            # Draw restart button if game is over
+            if state['game_over']:
+                draw_restart_button()
         
         # Modal box
         if modal:
@@ -324,20 +431,7 @@ def main():
             modal_x = (800 - modal_width) // 2  # Center horizontally
             modal_y = (800 - modal_height) // 2  # Center vertically
             
-            # Draw modal background with border
-            pygame.draw.rect(screen, GRAY, (modal_x, modal_y, modal_width, modal_height))
-            pygame.draw.rect(screen, BLACK, (modal_x, modal_y, modal_width, modal_height), 2)
-            
-            # Split text into lines and render each line
-            lines = modal.split("\n")
-            line_height = 30  # Space between lines
-            start_y = modal_y + 20  # Start text 20 pixels from top of modal
-            
-            for i, line in enumerate(lines):
-                if i * line_height < modal_height - 40:  # Only show lines that fit in the modal
-                    text = font.render(line, True, BLACK)
-                    text_rect = text.get_rect(centerx=modal_x + modal_width//2, y=start_y + i * line_height)
-                    screen.blit(text, text_rect)
+            draw_modal(screen, modal, modal_x, modal_y, modal_width, modal_height)
         
         pygame.display.update()
         clock.tick(60)
