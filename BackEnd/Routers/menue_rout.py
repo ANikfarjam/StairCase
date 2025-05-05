@@ -280,3 +280,154 @@ def get_friend_requests():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+# ===================== PARTY & INVITE SYSTEM ===================== #
+
+# Send game invitation
+@menue_bp.route('/send_invite', methods=['POST'])
+def send_invite():
+    try:
+        data = request.get_json()
+        sender = data.get("from")
+        receiver = data.get("to")
+        if not sender or not receiver:
+            return jsonify({"error": "Missing sender or receiver"}), 400
+
+        receiver_doc = db.collection("Users").where("Username", "==", receiver).limit(1).stream()
+        receiver_doc = next(receiver_doc, None)
+        if not receiver_doc:
+            return jsonify({"error": "Receiver not found"}), 404
+
+        receiver_doc.reference.update({"pending_invite": sender})
+        return jsonify({"message": "Invite sent"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Check if a user has a pending invite
+@menue_bp.route('/check_invite', methods=['GET'])
+def check_invite():
+    try:
+        username = request.args.get("username")
+        user_doc = db.collection("Users").where("Username", "==", username).limit(1).stream()
+        user_doc = next(user_doc, None)
+        if not user_doc:
+            return jsonify({"from": None}), 404
+
+        data = user_doc.to_dict()
+        return jsonify({"from": data.get("pending_invite")}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Accept invite
+@menue_bp.route('/accept_invite', methods=['POST'])
+def accept_invite():
+    try:
+        data = request.get_json()
+        sender = data.get("from")
+        receiver = data.get("to")
+        if not sender or not receiver:
+            return jsonify({"error": "Missing from or to"}), 400
+
+        sender_doc = db.collection("Users").where("Username", "==", sender).limit(1).stream()
+        receiver_doc = db.collection("Users").where("Username", "==", receiver).limit(1).stream()
+        sender_doc = next(sender_doc, None)
+        receiver_doc = next(receiver_doc, None)
+
+        if not sender_doc or not receiver_doc:
+            return jsonify({"error": "User not found"}), 404
+
+        sender_doc.reference.update({
+            "Party": firestore.ArrayUnion([receiver])
+        })
+        receiver_doc.reference.update({
+            "Party": firestore.ArrayUnion([sender]),
+            "pending_invite": firestore.DELETE_FIELD
+        })
+
+        return jsonify({"message": "Invite accepted"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Decline invite
+@menue_bp.route('/decline_invite', methods=['POST'])
+def decline_invite():
+    try:
+        data = request.get_json()
+        receiver = data.get("to")
+        user_doc = db.collection("Users").where("Username", "==", receiver).limit(1).stream()
+        user_doc = next(user_doc, None)
+        if not user_doc:
+            return jsonify({"error": "User not found"}), 404
+
+        user_doc.reference.update({
+            "pending_invite": firestore.DELETE_FIELD
+        })
+        return jsonify({"message": "Invite declined"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Fetch party list
+@menue_bp.route('/get_party', methods=['GET'])
+def get_party():
+    try:
+        username = request.args.get("username")
+        user_doc = db.collection("Users").where("Username", "==", username).limit(1).stream()
+        user_doc = next(user_doc, None)
+        if not user_doc:
+            return jsonify({"party": []}), 404
+
+        data = user_doc.to_dict()
+        return jsonify({"party": data.get("Party", [])}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@menue_bp.route("/reset_party", methods=["POST"])
+def reset_party():
+    try:
+        data = request.get_json()
+        username = data.get("username")
+        user_ref = db.collection("Users").where("Username", "==", username).limit(1).stream()
+        user_doc = next(user_ref, None)
+        if not user_doc:
+            return jsonify({"error": "User not found"}), 404
+        user_doc.reference.update({"Party": []})
+        return jsonify({"message": "Party reset"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+########starting game routes######
+@menue_bp.route("/start_game_signal", methods=["POST"])
+def start_game_signal():
+    username = request.json["username"]
+    
+    # Update global signal
+    db.collection("GameStart").document("global").set({
+        "start_for": username
+    })
+
+    # Also mark the user's Firestore as game started
+    user_query = db.collection("Users").where("Username", "==", username).limit(1).stream()
+    user_doc = next(user_query, None)
+    if user_doc:
+        user_doc.reference.update({"GameStarted": True})
+
+    return jsonify({"success": True})
+
+@menue_bp.route("/check_start", methods=["GET"])
+def check_start():
+    username = request.args.get("username")
+    doc = db.collection("GameStart").document("global").get()
+    if doc.exists and doc.to_dict().get("start_for") == username:
+        return jsonify({"start": True})
+    return jsonify({"start": False})
+@menue_bp.route("/get_party_status", methods=["GET"])
+def get_party_status():
+    username = request.args.get("username")
+    try:
+        # You are looking up by doc ID, but "username" is actually the Username field
+        user_query = db.collection("Users").where("Username", "==", username).limit(1).stream()
+        user_doc = next(user_query, None)
+        if user_doc:
+            data = user_doc.to_dict()
+            return jsonify({"game_started": data.get("GameStarted", False)}), 200
+        return jsonify({"error": "User not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

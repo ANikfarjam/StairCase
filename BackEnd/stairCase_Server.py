@@ -18,4 +18,4 @@ app.register_blueprint(rout)
 app.register_blueprint(start_BP)
 app.register_blueprint(menue_bp)
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)
