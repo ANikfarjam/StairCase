@@ -9,6 +9,7 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
+LIGHT_BLUE = (155, 229, 255)
 GREEN = (0, 255, 0)
 GRAY = (200, 200, 200)
 YELLOW = (255, 255, 0)
@@ -49,7 +50,6 @@ user_answer = ""
 active_modal = None  # 'trivia', 'hangman', or None
 
 screen = pygame.display.set_mode((800, 800))
-
 
 def join_game():
     global player_id
@@ -120,6 +120,17 @@ def draw_start_button():
 
     return button_rect
 
+def draw_restart_button():
+    button_rect = pygame.Rect(380, 720, BUTTON_WIDTH + 10, BUTTON_HEIGHT)
+    pygame.draw.rect(screen, ORANGE, button_rect)
+    pygame.draw.rect(screen, BLACK, button_rect, 2)
+
+    button_text = font.render("Restart Game", True, BLACK)
+    text_rect = button_text.get_rect(center=button_rect.center)
+    screen.blit(button_text, text_rect)
+
+    return button_rect
+
 def draw_board(screen, state):
     global background_x
     
@@ -146,7 +157,7 @@ def draw_board(screen, state):
             # else:
             #     color = ORANGE
 
-            color = BLUE if cell_num in state["trivia_cells"] else YELLOW if cell_num in state["hangman_cells"] else LIGHT_YELLOW if (row + col) % 2 == 0 else ORANGE
+            color = LIGHT_BLUE if cell_num in state["trivia_cells"] else YELLOW if cell_num in state["hangman_cells"] else LIGHT_YELLOW if (row + col) % 2 == 0 else ORANGE
             # Draw filled square
             pygame.draw.rect(screen, color, (x, y, CELL_SIZE, CELL_SIZE))
             # Draw square border
@@ -284,40 +295,34 @@ def draw_players(screen, state):
         screen.blit(player_text, player_text_rect)
 
 def draw_modal(screen, modal, modal_x, modal_y, modal_width, modal_height):
-    # Draw modal background with border
-    pygame.draw.rect(screen, GRAY, (modal_x, modal_y, modal_width, modal_height))
-    pygame.draw.rect(screen, BLACK, (modal_x, modal_y, modal_width, modal_height), 2)
+    # Create a surface with alpha channel
+    modal_surface = pygame.Surface((modal_width, modal_height), pygame.SRCALPHA)
+    
+    # Draw semi-transparent background
+    pygame.draw.rect(modal_surface, (200, 200, 200, 224), (0, 0, modal_width, modal_height))
+    pygame.draw.rect(modal_surface, (0, 0, 0, 255), (0, 0, modal_width, modal_height), 2)
     
     # Split text into lines and render each line
     lines = modal.split("\n")
-    line_height = 30  # Space between lines
-    start_y = modal_y + 20  # Start text 20 pixels from top of modal
+    line_height = 25  # Space between lines
+    start_y = 20  # Start text 20 pixels from top of modal
     
     for i, line in enumerate(lines):
         if i * line_height < modal_height - 40:  # Only show lines that fit in the modal
-            text = font.render(line, True, BLACK)
-            text_rect = text.get_rect(centerx=modal_x + modal_width//2, y=start_y + i * line_height)
-            screen.blit(text, text_rect)
+            text = small_font.render(line, True, (0, 0, 0, 255))  # Black text with full opacity
+            text_rect = text.get_rect(centerx=modal_width//2, y=start_y + i * line_height)
+            modal_surface.blit(text, text_rect)
     
     # Draw user input if trivia modal is active
     if active_modal == "trivia":
-        input_text = small_font.render(f"Your answer: {user_answer}", True, BLUE)
-        screen.blit(input_text, (modal_x + 20, modal_y + modal_height - 60))
+        input_text = small_font.render(f"Your answer: {user_answer}", True, (0, 0, 255, 255))  # Blue text with full opacity
+        modal_surface.blit(input_text, (20, modal_height - 60))
     
-    # Draw continue message
-    continue_text = small_font.render("Press ENTER to continue...", True, BLACK)
-    screen.blit(continue_text, (modal_x + 20, modal_y + modal_height - 30))
+    continue_text = small_font.render("Press ENTER to continue...", True, (0, 0, 0, 255))  # Black text with full opacity
+    modal_surface.blit(continue_text, (20, modal_height - 30))
+    
+    screen.blit(modal_surface, (modal_x, modal_y))
 
-def draw_restart_button():
-    button_rect = pygame.Rect(380, 720, BUTTON_WIDTH, BUTTON_HEIGHT)
-    pygame.draw.rect(screen, ORANGE, button_rect)
-    pygame.draw.rect(screen, BLACK, button_rect, 2)
-
-    button_text = font.render("Restart Game", True, BLACK)
-    text_rect = button_text.get_rect(center=button_rect.center)
-    screen.blit(button_text, text_rect)
-
-    return button_rect
 
 def main():
     pygame.init()
@@ -366,6 +371,8 @@ def main():
                             })
                             print(res.json())
                             user_answer = ""  # Clear answer
+                            state = get_state()  # Update game state after answer
+                            last_state_update = time.time()
                         modal = ""  # Close modal
                         active_modal = None
                     elif event.key == pygame.K_BACKSPACE:
@@ -426,7 +433,7 @@ def main():
         # Modal box
         if modal:
             # Calculate modal box dimensions and position
-            modal_width = 600
+            modal_width = 700
             modal_height = 300
             modal_x = (800 - modal_width) // 2  # Center horizontally
             modal_y = (800 - modal_height) // 2  # Center vertically

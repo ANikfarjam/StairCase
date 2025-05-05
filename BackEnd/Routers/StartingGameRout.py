@@ -30,7 +30,7 @@ ladders = {}
 trivia_cells = set()
 hangman_cells = set()
 used_positions = set()
-total_cells = list(range(1, 99))
+total_cells = list(range(2, 88))
 
 def init_board():
     global snakes, ladders, trivia_cells, hangman_cells, used_positions
@@ -150,7 +150,9 @@ def roll():
 
     if cell in trivia_cells and trivia_agent:
         mini_game = "trivia"
-        topics = ['Sports', 'literature', 'Movies', 'Celebrities', 'Music', 'general knowledge']
+        # topics = ['Sports', 'literature', 'Movies', 'Celebrities', 'Music', 'general knowledge']
+        topics = ['Science', 'Geography', 'Math', 'History', 'Pop Culture', 'general knowledge', 'Animals', 'Food', 'Technology', 'Literature', 'Art', 'Sports']
+
         content = trivia_agent.envoke(random.choice(topics))
     # elif cell in hangman_cells and hangman_agent: # doesn't work for now
     #     mini_game = "hangman"
@@ -194,27 +196,66 @@ def state():
 
 @start_BP.route("/submit_answer", methods=["POST"])
 def submit_answer():
+    global game_over, winner, message
     try:
         data = request.get_json()
         player_id = data.get("player_id")
         answer = data.get("answer")
         
+        print(f"Received answer submission - Player: {player_id}, Answer: {answer}")
+        
         if not player_id or not answer:
+            print("Missing player_id or answer")
             return jsonify({"error": "Missing player_id or answer"}), 400
             
+        if player_id not in players:
+            print(f"Invalid player_id: {player_id}")
+            return jsonify({"error": "Invalid player"}), 400
+            
         # Check if it's a trivia question
-        if trivia_agent:
-            is_correct = trivia_agent.check_answer(answer)
-            return jsonify({
-                "correct": is_correct,
-                "message": "Correct answer!" if is_correct else "Incorrect answer!"
-            })
-        else:
+        if not trivia_agent:
+            print("Trivia agent not available")
             return jsonify({"error": "Trivia agent not available"}), 500
             
+        try:
+            is_correct = trivia_agent.check_answer(answer)
+            print(f"Answer check result: {is_correct}")
+            
+            # Move player based on answer
+            current_pos = players[player_id]
+
+            player_answered = current_player
+            if player_answered == 1:
+                player_answered = 2
+            else:
+                player_answered = 1
+
+            if is_correct:
+                new_pos = min(current_pos + 10, 98)  # Move forward up to 10 squares, can't go beyond 99
+                message = f"Correct answer! Player {player_answered} moves forward to position {new_pos + 1}!"
+            else:
+                new_pos = max(current_pos - 10, 0)  # Move back up to 10 squares
+                message = f"Incorrect answer! Player {player_answered} moves back to position {new_pos + 1}!"
+            
+            # Update player position
+            players[player_id] = new_pos
+            print(f"Updated player position: {new_pos}")
+            
+            response = {
+                "correct": is_correct,
+                "message": message,
+                "new_position": new_pos,
+            }
+            print(f"Sending response: {response}")
+            return jsonify(response)
+            
+        except Exception as e:
+            print(f"Error checking answer: {str(e)}")
+            return jsonify({"error": f"Error checking answer: {str(e)}"}), 500
+            
     except Exception as e:
-        print("❌ ERROR in /submit_answer:", str(e))
-        return jsonify({"error": "Server failed"}), 500
+        print(f"❌ ERROR in /submit_answer: {str(e)}")
+        return jsonify({"error": f"Server failed: {str(e)}"}), 500
 
 @start_BP.route('/restart', methods=['POST'])
 def restart_game():
