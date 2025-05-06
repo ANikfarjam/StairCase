@@ -38,6 +38,13 @@ used_positions = set()
 total_cells = list(range(2, 88))
 
 def init_board():
+    """ 
+    Initializes the board with obstacles: snakes, ladders, trivia, and hangman minigames.
+
+    Parameters: None
+
+    Returns: None
+    """
     global snakes, ladders, trivia_cells, hangman_cells, used_positions
     snakes.clear()
     ladders.clear()
@@ -76,6 +83,13 @@ init_board()
 
 @start_BP.route("/join", methods=["POST"])
 def join():
+    """ 
+    Handles joining the game for 2 player support
+
+    Parameters: None
+
+    Returns: A json object with the player_id
+    """
     try:
         player_id = f"player_{len(players)+1}"
         players[player_id] = 0
@@ -86,14 +100,32 @@ def join():
         print("❌ ERROR in /join:", str(e))
         return jsonify({"error": "Server failed"}), 500
 
-"""
-Roll Dice
-Calculates and return the new position of each player
-triggers game events
-returns the contents of the mini games
-"""
+
 @start_BP.route("/roll", methods=["POST"])
 def roll():
+    """
+    Handles the rolling dice logic:
+    Calculates and return the new position of each player,
+    triggers game events such as moving down a snake or moving up a ladder,
+    and returns the contents of the mini games.
+
+    Parameters: None
+    
+    Returns: A JSON dictionaryresponse containing:
+            - roll: The dice roll value (1-6)
+            - before_roll: Player's position before the roll
+            - new_position: Player's position after the roll
+            - mini_game: Type of minigame if landed on one ('trivia' or 'hangman')
+            - content: Prompt from minigame when landed on
+            - message: Game message to display
+            - game_over: Boolean indicating if game is over
+            - winner: Player number that won the game
+            - current_player: Current player's turn
+            - animation_data: positions of initial and ending positions of snakes and ladders for animation movement
+                - snake_ladder: Boolean indicating if landed on snake/ladder
+                - snake_ladder_start: Starting position of snake/ladder
+                - snake_ladder_end: Ending position of snake/ladder
+    """
     global current_player, game_over, winner, message
     data = request.get_json()
     player_id = data.get("player_id")
@@ -176,13 +208,27 @@ def roll():
         **animation_data  # Include animation data in response
     })
 
-"""
-Return the board states
-snakes and ladders positoins
-trivia and hangman minigame positions
-"""
 @start_BP.route("/state", methods=["GET"])
 def state():
+    """
+    Returns the board states, including snake and ladder positions,
+    trivia and hangman cell positions, the current player's turn,
+    whether the game is over, the winner, and the current message.
+
+    Parameters: None
+
+    Returns: A JSON dictionary response containing:
+        - players: Player positions
+        - snakes: Snake positions
+        - ladders: Ladder positions
+        - trivia_cells: Trivia cell positions
+        - hangman_cells: Hangman cell positions
+        - current_player: Current player's turn
+        - game_over: Boolean indicating if game is over
+        - winner: Player number that won the game
+        - message: Current game message
+    """
+
     # Convert snake and ladder keys to strings
     snakes_str = {str(k): str(v) for k, v in snakes.items()}
     ladders_str = {str(k): str(v) for k, v in ladders.items()}
@@ -201,6 +247,25 @@ def state():
 
 @start_BP.route("/submit_answer", methods=["POST"])
 def submit_answer():
+    """
+    Handles the submission of user answers to the trivia and hangman minigames.
+
+    Parameters: None
+
+    Returns: 
+        If its for a trivia question: 
+            correct: Boolean indicating if the answer is correct
+            message: Game message to display
+            new_position: Player's position after the minigame
+            game_type: Type of minigame ('trivia' or 'hangman')
+        If its for a hangman question:
+            correct: Boolean indicating if the answer is correct
+            revealed: Partially hidden word for hangman
+            lives: Number of guesses remaining for hangman
+            new_position: Player's position after the minigame
+            message: Game message to display
+            game_type: Type of minigame ('trivia' or 'hangman')
+    """
     global game_over, winner, message
     try:
         data = request.get_json()
@@ -307,6 +372,13 @@ def submit_answer():
 
 @start_BP.route('/restart', methods=['POST'])
 def restart_game():
+    """
+    Restarts the game so that the players can play again
+
+    Parameters: None
+
+    Returns: None
+    """
     global player1_pos, player2_pos, current_player, game_over, winner, message, message_timer, animating, current_anim_pos, target_anim_pos, trivia_cells, hangman_cells
     
     for pid, pos in players.items():
@@ -324,4 +396,3 @@ def restart_game():
     # Reinitialize trivia and hangman cells
     init_board()
     
-    return jsonify({"status": "success"})

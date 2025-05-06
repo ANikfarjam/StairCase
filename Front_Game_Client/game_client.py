@@ -4,7 +4,7 @@ from sys import exit
 import time
 import math
 
-# Constants
+# Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
@@ -29,8 +29,8 @@ player_id = None
 
 # Animation constants
 ANIMATION_SPEED = 0.1  # Speed of animation (0.1 = 10% of the way each frame)
-ANIMATION_PHASE_DURATION = 1  # Duration of each animation phase in seconds
-BACKGROUND_SCROLL_SPEED = 1  # Pixels per frame to move the background
+ANIMATION_PHASE_DURATION = 1
+BACKGROUND_SCROLL_SPEED = 1 # Pixels per frame to move the sky background image
 
 # Animation state
 animating = False
@@ -39,19 +39,26 @@ target_anim_pos = [0, 0]
 current_player_animating = None
 snake_ladder_animation = False
 snake_ladder_end_pos = None
-animation_phase = 1  # 1 for first phase, 2 for second phase
+animation_phase = 1  # 1 for animating normal movement, 2 for moving up/down snake/ladder
 
-# Background state
+# Background Image
 background_x = 0
 sky_background = pygame.image.load('graphics/blue-sky.png')
+ground_background = pygame.image.load('graphics/ground.png')
 
-# Add these variables near the top with other game state variables
+# User answer input for hangman and trivia minigames
 user_answer = ""
 active_modal = None  # 'trivia', 'hangman', or None
 
 screen = pygame.display.set_mode((800, 800))
 
 def join_game():
+    """ Handles joining the game for multiplayer support
+
+    Parameters: None
+
+    Returns: None
+    """
     global player_id
     try:
         res = requests.post(f"{SERVER_URL}/join")
@@ -65,6 +72,24 @@ def join_game():
         exit(1)
 
 def roll_dice():
+    """ Handles rolling the dice for player movement across the board
+
+    Parameters: None
+
+    Returns: This returns a dictionary from the server's response containing game state info:
+            - roll: The dice roll value (1-6)
+            - before_roll: Player's position before the roll
+            - new_position: Player's position after the roll
+            - mini_game: Type of minigame if landed on one ('trivia' or 'hangman')
+            - content: Content for minigame if applicable
+            - message: Game message to display
+            - game_over: Boolean indicating if game is over
+            - winner: Player that won if game is over
+            - current_player: Current player's turn
+            - snake_ladder: Boolean indicating if landed on snake/ladder
+            - snake_ladder_start: Starting position of snake/ladder
+            - snake_ladder_end: Ending position of snake/ladder
+    """
     global animating, current_anim_pos, target_anim_pos, current_player_animating, snake_ladder_animation, snake_ladder_end_pos
     
     res = requests.post(f"{SERVER_URL}/roll", json={"player_id": player_id})
@@ -94,9 +119,29 @@ def roll_dice():
     return result
 
 def get_state():
+    """ Handles getting the current game state from the server
+
+    Parameters: None
+
+    Returns: This returns a dictionary from the server's response containing game state info:
+            - players: Dictionary of player positions
+            - snakes: Dictionary of snake positions
+            - ladders: Dictionary of ladder positions
+            - trivia_cells: List of positions that have trivia minigames
+            - hangman_cells: List of positions that have hangman minigames
+            - current_player: Current player's turn
+            - game_over: Boolean indicating if game is over
+            - winner: Player that won if game is over
+    """
     return requests.get(f"{SERVER_URL}/state").json()
 
 def get_cell_coords(pos):
+    """ Handles getting the coordinates of a cell on the board
+
+    Parameters: pos (int): The position on the board
+
+    Returns: This returns a tuple of coordinates for the cell at the position
+    """
     # Ensure pos is an integer
     pos = int(pos)
     row = (pos - 1) // BOARD_SIZE
@@ -105,19 +150,15 @@ def get_cell_coords(pos):
     y = (BOARD_SIZE - 1 - row) * CELL_SIZE + GRID_OFFSET + CELL_SIZE//2
     return x, y
 
-def draw_start_button():
-    button_rect = pygame.Rect(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT)
-    button_rect.center = (400, 400)
-    pygame.draw.rect(screen, YELLOW, button_rect)
-    pygame.draw.rect(screen, BLACK, button_rect, 2)
-    
-    button_text = font.render("Start", True, BLACK)
-    text_rect = button_text.get_rect(center=button_rect.center)
-    screen.blit(button_text, text_rect)
-
-    return button_rect
-
 def draw_restart_button():
+    """ 
+    Handles drawing the restart button, which will show when a player wins.
+    This basically allows the players to play again.
+
+    Parameters: None
+
+    Returns: This returns a rectangle object for the restart button.
+    """
     button_rect = pygame.Rect(520, 720, BUTTON_WIDTH + 15, BUTTON_HEIGHT)
     pygame.draw.rect(screen, ORANGE, button_rect)
     pygame.draw.rect(screen, BLACK, button_rect, 2)
@@ -129,8 +170,16 @@ def draw_restart_button():
     return button_rect
 
 def draw_board(screen, state):
+    """ 
+    Handles drawing the 10x10 game board, and indicating which 
+    cells have trivia and hangman minigames.
+
+    Parameters: screen (pygame.Surface): The screen that will be drawn on
+                state (dict): The current game state
+
+    Returns: None
+    """
     global background_x
-    
     # Update background position
     background_x -= BACKGROUND_SCROLL_SPEED
     if background_x <= -sky_background.get_width():
@@ -140,7 +189,7 @@ def draw_board(screen, state):
     screen.fill(WHITE)
     screen.blit(sky_background, (background_x, 0))
     screen.blit(sky_background, (background_x + sky_background.get_width(), 0))
-    
+    screen.blit(ground_background, (0, 700))
     # Draw grid
     for row in range(BOARD_SIZE):
         for col in range(BOARD_SIZE):
@@ -161,7 +210,7 @@ def draw_board(screen, state):
             screen.blit(text, text_rect)
             
             if cell_num in state["trivia_cells"]:
-                trivia_text = smaller_font.render("Trivia", True, WHITE)
+                trivia_text = smaller_font.render("Trivia", True, BLACK)
                 text_rect = trivia_text.get_rect(centerx=x + CELL_SIZE//2, bottom=y + CELL_SIZE - 5)
                 screen.blit(trivia_text, text_rect)
 
@@ -171,6 +220,14 @@ def draw_board(screen, state):
                 screen.blit(hangman_text, text_rect)
 
 def draw_snakes_ladders(screen, state):
+    """ 
+    Handles drawing the snakes and ladders on the board.
+
+    Parameters: screen (pygame.Surface): The screen that will be drawn on
+                state (dict): The current game state
+
+    Returns: None
+    """
     for row in range(BOARD_SIZE):
         for col in range(BOARD_SIZE):
             x = col * CELL_SIZE + GRID_OFFSET
@@ -210,6 +267,15 @@ def draw_snakes_ladders(screen, state):
                 pygame.draw.circle(screen, GREEN, (end_x, end_y), 5)
 
 def draw_dice_button(screen, state):
+    """ 
+    Handles drawing the roll dice button, which will only show for the current player 
+    when it is their turn. 
+
+    Parameters: screen (pygame.Surface): The screen that will be drawn on
+                state (dict): The current game state
+
+    Returns: This returns a rectangle object for the dice button.
+    """
     # Only show button for current player
     if state['current_player'] != int(player_id.split('_')[1]):
         return None
@@ -227,6 +293,17 @@ def draw_dice_button(screen, state):
     return button_rect
 
 def draw_game_info(screen, state):
+    """ 
+    Handles drawing important messages on top of the screen
+    that indicate which player's turn it is, game over message when
+    there is a winner, and a message after each roll telling the player
+    how much they rolled and the new position they moved to.
+
+    Parameters: screen (pygame.Surface): The screen that will be drawn on
+                state (dict): The current game state
+
+    Returns: None
+    """
     # Draw current player
     player_text = font.render(f"Current Player: {state['current_player']}", True, BLACK)
     screen.blit(player_text, (20, 20))
@@ -241,6 +318,14 @@ def draw_game_info(screen, state):
     screen.blit(message_text, (20, 70))
 
 def draw_player_identification(screen):
+    """ 
+    On each player's screen, draws a tiny message on the bottom left
+    telling them what player number (1 or 2) they are.
+
+    Parameters: screen (pygame.Surface): The screen that will be drawn on
+
+    Returns: None
+    """
     # Get player number from local player_id
     player_num = int(player_id.split('_')[1])
     # Set color based on player number
@@ -253,6 +338,14 @@ def draw_player_identification(screen):
     screen.blit(text, (20, 780 - text.get_height()))
 
 def update_animation():
+    """ 
+    Handles updating the animation of the player's movement across the board
+    when they roll the dice.
+
+    Parameters: None
+
+    Returns: None
+    """
     global animating, current_anim_pos, animation_phase, snake_ladder_animation, snake_ladder_end_pos, target_anim_pos
     
     if not animating:
@@ -277,6 +370,16 @@ def update_animation():
             snake_ladder_animation = False
 
 def draw_players(screen, state):
+    """ 
+    Draws the players, represented as circles, on the board.
+    Player 1 is red and Player 2 is blue. This also draws the 
+    player circle constantly moving during an animation.
+
+    Parameters: screen (pygame.Surface): The screen that will be drawn on
+                state (dict): The current game state
+
+    Returns: None
+    """
     for pid, pos in state["players"].items():
         x, y = get_cell_coords(pos + 1)
         player_num = int(pid.split('_')[1])
@@ -295,6 +398,18 @@ def draw_players(screen, state):
         screen.blit(player_text, player_text_rect)
 
 def draw_modal(screen, modal, modal_x, modal_y, modal_width, modal_height):
+    """ 
+    Draws a box modal on top of the screen, which displays the minigame
+
+    Parameters: screen (pygame.Surface): The screen that will be drawn on
+                modal (str): The message to display
+                modal_x (int): The x coordinate of the modal
+                modal_y (int): The y coordinate of the modal
+                modal_width (int): The width of the modal
+                modal_height (int): The height of the modal
+
+    Returns: None
+    """
     # Create a surface with alpha channel
     modal_surface = pygame.Surface((modal_width, modal_height), pygame.SRCALPHA)
     
@@ -332,7 +447,6 @@ def main():
     font = pygame.font.SysFont(None, 36)
     small_font = pygame.font.SysFont(None, 24)
     smaller_font = pygame.font.SysFont(None, 14)
-    homescreen = True
     
     join_game()
     state = get_state()
@@ -419,35 +533,21 @@ def main():
                             if res.status_code == 200:
                                 state = get_state()
                                 last_state_update = time.time()
-            if event.type == pygame.MOUSEBUTTONDOWN and homescreen:
-                mouse_pos = pygame.mouse.get_pos()
-                start_button_rect = draw_start_button()
-
-                if start_button_rect.collidepoint(mouse_pos):
-                    homescreen = False
         
         # Draw game elements
-        if homescreen:
-            screen.fill((94, 129, 162))
-            welcome_message = font.render(f'Welcome to StairCase', True, (111, 196, 169))
-            welcome_message_rect = welcome_message.get_rect(center = (400, 200))
-            screen.blit(welcome_message, welcome_message_rect)
-
-            start_button_rect = draw_start_button()
-        else:
-            draw_board(screen, state)
-            draw_snakes_ladders(screen, state)
-            if not state['game_over']:
-                draw_dice_button(screen, state)
-            draw_game_info(screen, state)
-            draw_player_identification(screen)
+        draw_board(screen, state)
+        draw_snakes_ladders(screen, state)
+        if not state['game_over']:
+            draw_dice_button(screen, state)
+        draw_game_info(screen, state)
+        draw_player_identification(screen)
         
-            draw_players(screen, state)
-            update_animation()
+        draw_players(screen, state)
+        update_animation()
             
-            # Draw restart button if game is over
-            if state['game_over']:
-                draw_restart_button()
+        # Draw restart button if game is over
+        if state['game_over']:
+            draw_restart_button()
         
         # Modal box
         if modal:
