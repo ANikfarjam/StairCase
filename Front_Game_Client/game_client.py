@@ -104,9 +104,6 @@ def get_cell_coords(pos):
     x = col * CELL_SIZE + GRID_OFFSET + CELL_SIZE//2
     y = (BOARD_SIZE - 1 - row) * CELL_SIZE + GRID_OFFSET + CELL_SIZE//2
     return x, y
-    # row = 9 - (pos // 10)
-    # col = pos % 10 if (9 - row) % 2 == 0 else 9 - (pos % 10)
-    # return col * CELL_SIZE + GRID_OFFSET, row * CELL_SIZE + GRID_OFFSET
 
 def draw_start_button():
     button_rect = pygame.Rect(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT)
@@ -121,7 +118,7 @@ def draw_start_button():
     return button_rect
 
 def draw_restart_button():
-    button_rect = pygame.Rect(380, 720, BUTTON_WIDTH + 10, BUTTON_HEIGHT)
+    button_rect = pygame.Rect(520, 720, BUTTON_WIDTH + 15, BUTTON_HEIGHT)
     pygame.draw.rect(screen, ORANGE, button_rect)
     pygame.draw.rect(screen, BLACK, button_rect, 2)
 
@@ -150,12 +147,6 @@ def draw_board(screen, state):
             x = col * CELL_SIZE + GRID_OFFSET
             y = (BOARD_SIZE - 1 - row) * CELL_SIZE + GRID_OFFSET
             cell_num = row * BOARD_SIZE + col + 1
-            
-            # Alternate colors like a chess board
-            # if (row + col) % 2 == 0:
-            #     color = LIGHT_YELLOW
-            # else:
-            #     color = ORANGE
 
             color = LIGHT_BLUE if cell_num in state["trivia_cells"] else YELLOW if cell_num in state["hangman_cells"] else LIGHT_YELLOW if (row + col) % 2 == 0 else ORANGE
             # Draw filled square
@@ -170,7 +161,14 @@ def draw_board(screen, state):
             screen.blit(text, text_rect)
             
             if cell_num in state["trivia_cells"]:
-                screen.blit(small_font.render("T", True, WHITE), (x + CELL_SIZE//2 - 5, y + CELL_SIZE//2 + 15))
+                trivia_text = smaller_font.render("Trivia", True, WHITE)
+                text_rect = trivia_text.get_rect(centerx=x + CELL_SIZE//2, bottom=y + CELL_SIZE - 5)
+                screen.blit(trivia_text, text_rect)
+
+            if cell_num in state["hangman_cells"]:
+                hangman_text = smaller_font.render("Hangman", True, BLACK)
+                text_rect = hangman_text.get_rect(centerx=x + CELL_SIZE//2, bottom=y + CELL_SIZE - 5)
+                screen.blit(hangman_text, text_rect)
 
 def draw_snakes_ladders(screen, state):
     for row in range(BOARD_SIZE):
@@ -214,6 +212,8 @@ def draw_snakes_ladders(screen, state):
 def draw_dice_button(screen, state):
     # Only show button for current player
     if state['current_player'] != int(player_id.split('_')[1]):
+        return None
+    if active_modal in ["trivia", "hangman"]:
         return None
     
     button_rect = pygame.Rect(330, 720, BUTTON_WIDTH, BUTTON_HEIGHT)
@@ -313,8 +313,8 @@ def draw_modal(screen, modal, modal_x, modal_y, modal_width, modal_height):
             text_rect = text.get_rect(centerx=modal_width//2, y=start_y + i * line_height)
             modal_surface.blit(text, text_rect)
     
-    # Draw user input if trivia modal is active
-    if active_modal == "trivia":
+    # Draw user input if trivia or hangman modal is active
+    if active_modal in ["trivia", "hangman"]:
         input_text = small_font.render(f"Your answer: {user_answer}", True, (0, 0, 255, 255))  # Blue text with full opacity
         modal_surface.blit(input_text, (20, modal_height - 60))
     
@@ -328,9 +328,10 @@ def main():
     pygame.init()
     clock = pygame.time.Clock()
     pygame.display.set_caption("Snakes & Ladders")
-    global font, small_font, user_answer, active_modal
+    global font, small_font, smaller_font, user_answer, active_modal
     font = pygame.font.SysFont(None, 36)
     small_font = pygame.font.SysFont(None, 24)
+    smaller_font = pygame.font.SysFont(None, 14)
     homescreen = True
     
     join_game()
@@ -363,18 +364,36 @@ def main():
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
                         # Submit answer and close modal
-                        if active_modal == "trivia":
+                        if active_modal in ["trivia", "hangman"]:
                             # Send answer to server
                             res = requests.post(f"{SERVER_URL}/submit_answer", json={
                                 "player_id": player_id,
                                 "answer": user_answer
                             })
-                            print(res.json())
-                            user_answer = ""  # Clear answer
-                            state = get_state()  # Update game state after answer
-                            last_state_update = time.time()
-                        modal = ""  # Close modal
-                        active_modal = None
+                            response = res.json()
+                            print(response)
+                            
+                            if response.get("game_type") == "hangman" and not response.get("correct"):
+                                # Update modal with new revealed letters and lives
+                                if "revealed" in response:
+                                    modal = f"{response['revealed']}\n{response['message']}"
+                                else:
+                                    modal = response['message']
+                                    # If no revealed letters, it means game is over (out of lives)
+                                    user_answer = ""  # Clear answer
+                                    state = get_state()  # Update game state
+                                    last_state_update = time.time()
+                                    modal = ""  # Close modal
+                                    active_modal = None
+                            else:
+                                user_answer = ""  # Clear answer
+                                state = get_state()  # Update game state after answer
+                                last_state_update = time.time()
+                                modal = ""  # Close modal
+                                active_modal = None
+                        else:
+                            modal = ""  # Close modal
+                            active_modal = None
                     elif event.key == pygame.K_BACKSPACE:
                         user_answer = user_answer[:-1]
                     elif event.unicode.isprintable():

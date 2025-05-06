@@ -5,11 +5,11 @@ try:
     from Agent.TriviaLC import triviaAgent
     from Agent.HangmanLC import HangMan
     trivia_agent = triviaAgent()
-    # hangman_agent = HangMan() # doesn't work for now
+    hangman_agent = HangMan()
 except Exception as e:
     print("Error initializing agents:", e)
     trivia_agent = None
-    # hangman_agent = None # doesn't work for now
+    hangman_agent = None
 
 start_BP = Blueprint("Start_Game", __name__)
 
@@ -22,6 +22,11 @@ winner = None
 message = "Player 1's turn. Press the button to roll!"
 message_timer = 0
 message_duration = 120
+
+# Hangman game state
+hangman_words = {}
+hangman_revealed = {}
+hangman_lives = {}
 
 # Board configuration
 BOARD_SIZE = 10
@@ -64,8 +69,8 @@ def init_board():
 
     # Initialize minigame cells
     random.shuffle(total_cells)
-    trivia_cells.update(total_cells[:15])
-    # hangman_cells.update(total_cells[15:30])
+    trivia_cells.update(total_cells[:10])
+    hangman_cells.update(total_cells[10:20])
 
 init_board()
 
@@ -154,9 +159,9 @@ def roll():
         topics = ['Science', 'Geography', 'Math', 'History', 'Pop Culture', 'general knowledge', 'Animals', 'Food', 'Technology', 'Literature', 'Art', 'Sports']
 
         content = trivia_agent.envoke(random.choice(topics))
-    # elif cell in hangman_cells and hangman_agent: # doesn't work for now
-    #     mini_game = "hangman"
-    #     content = hangman_agent.envoke()
+    elif cell in hangman_cells and hangman_agent:
+        mini_game = "hangman"
+        content = hangman_agent.envoke()
 
     return jsonify({
         "roll": roll_val,
@@ -213,41 +218,84 @@ def submit_answer():
             return jsonify({"error": "Invalid player"}), 400
             
         # Check if it's a trivia question
-        if not trivia_agent:
-            print("Trivia agent not available")
-            return jsonify({"error": "Trivia agent not available"}), 500
+        if not trivia_agent and not hangman_agent:
+            print("No game agents available")
+            return jsonify({"error": "No game agents available"}), 500
             
         try:
-            is_correct = trivia_agent.check_answer(answer)
-            print(f"Answer check result: {is_correct}")
-            
-            # Move player based on answer
             current_pos = players[player_id]
-
             player_answered = current_player
             if player_answered == 1:
                 player_answered = 2
             else:
                 player_answered = 1
 
-            if is_correct:
-                new_pos = min(current_pos + 10, 98)  # Move forward up to 10 squares, can't go beyond 99
-                message = f"Correct answer! Player {player_answered} moves forward to position {new_pos + 1}!"
-            else:
-                new_pos = max(current_pos - 10, 0)  # Move back up to 10 squares
-                message = f"Incorrect answer! Player {player_answered} moves back to position {new_pos + 1}!"
+            # Handle trivia answer
+            if trivia_agent and current_pos + 1 in trivia_cells:
+                is_correct = trivia_agent.check_answer(answer)
+                if is_correct:
+                    new_pos = min(current_pos + 10, 98)
+                    message = f"Correct answer! Player {player_answered} moves forward to position {new_pos + 1}!"
+                else:
+                    new_pos = max(current_pos - 10, 0)
+                    message = f"Incorrect answer! Player {player_answered} moves back to position {new_pos + 1}!"
+                players[player_id] = new_pos
+                return jsonify({
+                    "correct": is_correct,
+                    "message": message,
+                    "new_position": new_pos,
+                    "game_type": "trivia"
+                })
             
-            # Update player position
-            players[player_id] = new_pos
-            print(f"Updated player position: {new_pos}")
+            # Handle hangman answer
+            elif hangman_agent and current_pos + 1 in hangman_cells:
+                if not hangman_agent.current_word:
+                    # Initialize hangman game
+                    revealed = hangman_agent.envoke()
+                    return jsonify({
+                        "game_type": "hangman",
+                        "revealed": revealed,
+                        "lives": hangman_agent.lives,
+                        "message": "Guess the word!"
+                    })
+                
+                # Check hangman answer
+                is_correct = hangman_agent.check_answer(answer)
+                
+                if is_correct:
+                    new_pos = min(current_pos + 10, 98)
+                    message = f"Correct! Player {player_answered} moves forward to position {new_pos + 1}!"
+                    players[player_id] = new_pos
+                    hangman_agent.reset()
+                    return jsonify({
+                        "correct": True,
+                        "message": message,
+                        "new_position": new_pos,
+                        "game_type": "hangman"
+                    })
+                else:
+                    game_state = hangman_agent.get_game_state()
+                    if hangman_agent.lives <= 0:
+                        new_pos = max(current_pos - 10, 0)
+                        message = f"Out of lives! Player {player_answered} moves back to position {new_pos + 1}!"
+                        players[player_id] = new_pos
+                        hangman_agent.reset()
+                        return jsonify({
+                            "correct": False,
+                            "message": message,
+                            "new_position": new_pos,
+                            "game_type": "hangman"
+                        })
+                    else:
+                        return jsonify({
+                            "correct": False,
+                            "revealed": game_state["revealed"],
+                            "lives": game_state["lives"],
+                            "message": game_state["message"],
+                            "game_type": "hangman"
+                        })
             
-            response = {
-                "correct": is_correct,
-                "message": message,
-                "new_position": new_pos,
-            }
-            print(f"Sending response: {response}")
-            return jsonify(response)
+            return jsonify({"error": "Not in a minigame cell"}), 400
             
         except Exception as e:
             print(f"Error checking answer: {str(e)}")
