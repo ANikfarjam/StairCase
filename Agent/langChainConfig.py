@@ -18,8 +18,7 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-# MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
-MISTRAL_API_KEY="rBzreRqYE6e1NxXF9moxvjlbfjN5W9FF"
+MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions"
 MISTRAL_MODEL = "mistral-small"  # or "mistral-medium", etc.
 
