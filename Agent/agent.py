@@ -4,3 +4,4 @@ class agent:
         self.__chain = chain
     def chain(self):
         return self.__chain
+
