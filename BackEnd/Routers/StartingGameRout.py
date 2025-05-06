@@ -69,16 +69,46 @@ def init_board():
 
 init_board()
 
+# @start_BP.route("/join", methods=["POST"])
+# def join():
+#     try:
+#         player_id = f"player_{len(players)+1}"
+#         players[player_id] = 0
+#         player_turn_order.append(player_id)
+#         print(f"/join called → {player_id}")
+#         return jsonify({"player_id": player_id})
+#     except Exception as e:
+#         print("ERROR in /join:", str(e))
+#         return jsonify({"error": "Server failed"}), 500
+
+# @start_BP.route("/join", methods=["POST"])
+# def join():
+#     try:
+#         player_id = f"player_{len(players)+1}"
+#         players[player_id] = 0
+#         player_turn_order.append(player_id)
+#         print(f"✅ /join called → {player_id}")
+#         return jsonify({"player_id": player_id})
+#     except Exception as e:
+#         print("❌ ERROR in /join:", str(e))
+#         return jsonify({"error": "Server failed"}), 500
+
 @start_BP.route("/join", methods=["POST"])
 def join():
     try:
+        data = request.get_json()
+        username = data.get("username", f"user_{len(players)+1}")
+        
         player_id = f"player_{len(players)+1}"
         players[player_id] = 0
         player_turn_order.append(player_id)
-        print(f"/join called → {player_id}")
+
+        print(f"✅ /join called → {player_id} for {username}")
+        print(f"Current players: {players}")
+        
         return jsonify({"player_id": player_id})
     except Exception as e:
-        print("ERROR in /join:", str(e))
+        print("❌ ERROR in /join:", str(e))
         return jsonify({"error": "Server failed"}), 500
 
 """
@@ -95,9 +125,12 @@ def roll():
     if player_id not in players:
         return jsonify({"error": "Invalid player"}), 400
 
-    # Check if it's the player's turn
+    if current_player - 1 >= len(player_turn_order):
+        return jsonify({"error": "Not enough players joined"}), 400
+
     if player_turn_order[current_player - 1] != player_id:
         return jsonify({"error": "Not your turn"}), 400
+
 
     roll_val = random.randint(1, 6)
     before_roll = players[player_id]
@@ -258,21 +291,18 @@ def submit_answer():
 
 @start_BP.route('/restart', methods=['POST'])
 def restart_game():
-    global player1_pos, player2_pos, current_player, game_over, winner, message, message_timer, animating, current_anim_pos, target_anim_pos, trivia_cells, hangman_cells
-    
-    for pid, pos in players.items():
-        players[pid] = 0
+    global players, player_turn_order, current_player, game_over, winner, message, message_timer
+
+    # ✅ Clear all player data so join starts fresh
+    players.clear()
+    player_turn_order.clear()
 
     current_player = 1
     game_over = False
     winner = None
-    message = ""
+    message = "Player 1's turn. Press the button to roll!"
     message_timer = 0
-    animating = False
-    current_anim_pos = [0, 0]
-    target_anim_pos = [0, 0]
-    
-    # Reinitialize trivia and hangman cells
+
     init_board()
-    
+
     return jsonify({"status": "success"})

@@ -27,4 +27,3 @@ class triviaAgent(agent):
                 })
                 return "True" in check
         return False
-    

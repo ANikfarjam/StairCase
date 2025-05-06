@@ -258,40 +258,19 @@ def menu_screen():
             check_for_invite()
             last_refresh = time.time()
 
-        #  Auto-start check
-        # if time.time() - last_check > 3:
-        #     try:
-        #         res = requests.get(f"{SERVER}/get_party_status", params={"username": user_info["Username"]})
-        #         if res.status_code == 200 and res.json().get("game_started"):
-        #             print("Game started remotely. Launching...")
-        #             import importlib.util
-        #             import sys
-        #             game_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "game_client.py"))
-        #             spec = importlib.util.spec_from_file_location("game_client", game_path)
-        #             game_module = importlib.util.module_from_spec(spec)
-        #             sys.modules["game_client"] = game_module
-        #             spec.loader.exec_module(game_module)
-        #             game_module.main()
-        #     except Exception as e:
-        #         print("Auto-start error:", e)
-        #     last_check = time.time()
-
         # Friends List
         draw_text("Friends:", 40, 140)
+        invite_buttons = []
         for i, f in enumerate(friends[:5]):
             y = 170 + i * 50
             pygame.draw.rect(screen, (220, 235, 255), (40, y, 360, 40), border_radius=10)
             draw_text(f['Username'], 80, y + 10)
             dot_color = GREEN if f.get("Online") else RED
             pygame.draw.circle(screen, dot_color, (55, y + 20), 8)
+            # Store button rect for event handling
             if f.get("Online"):
                 invite_btn = draw_button("Invite", 260, y + 5, 80, 28, ORANGE)
-                if pygame.mouse.get_pressed()[0]:
-                    if invite_btn.collidepoint(pygame.mouse.get_pos()):
-                        if send_game_invite(f["Username"]):
-                            message = f"Invited {f['Username']}!"
-                        else:
-                            message = f"Failed to invite {f['Username']}"
+                invite_buttons.append((invite_btn, f["Username"]))
 
         # Party List
         draw_text("Party:", 40, 460)
@@ -302,22 +281,14 @@ def menu_screen():
 
         # Friend Requests
         draw_text("Requests:", 500, 140)
+        req_buttons = []
         for i, sender in enumerate(friend_requests[:5]):
             y = 170 + i * 60
             pygame.draw.rect(screen, (255, 240, 240), (500, y, 360, 50), border_radius=10)
             draw_text(sender["Username"], 520, y + 15)
-
             acc_btn = draw_button("Accept", 700, y + 10, 70, 30, GREEN)
             rej_btn = draw_button("Reject", 770, y + 10, 70, 30, RED)
-
-            if pygame.mouse.get_pressed()[0]:
-                mouse_pos = pygame.mouse.get_pos()
-                if acc_btn.collidepoint(mouse_pos):
-                    accept_friend(sender["id"])
-                    fetch_friend_data()
-                elif rej_btn.collidepoint(mouse_pos):
-                    reject_friend(sender["id"])
-                    fetch_friend_data()
+            req_buttons.append((acc_btn, rej_btn, sender["id"]))
 
         # Search Box
         pygame.draw.rect(screen, GRAY if not active else BLUE, input_box, 2)
@@ -332,51 +303,14 @@ def menu_screen():
         elif search_result and isinstance(search_result, dict):
             draw_text(f"Found: {search_result['Username']}", 500, 500)
             req_btn = draw_button("Send Request", 650, 495, 150, 35)
-            if pygame.mouse.get_pressed()[0]:
-                if req_btn.collidepoint(pygame.mouse.get_pos()):
-                    if send_friend_request(search_result["Username"]):
-                        message = "Friend request sent."
-                        search_result = None
-                        fetch_friend_data()
-                    else:
-                        message = "Failed to send request."
+        else:
+            req_btn = None
+
         if message:
             draw_text(message, 500, 530, GREEN)
 
         # Start Game Button
         start_btn = draw_button("Start Game", 350, 610, 200, 45)
-        if pygame.mouse.get_pressed()[0] and start_btn.collidepoint(pygame.mouse.get_pos()):
-            try:
-                party_res = requests.get(f"{SERVER}/get_party", params={"username": user_info["Username"]})
-                party = party_res.json().get("party", [])
-
-                if user_info["Username"] not in party:
-                    party.append(user_info["Username"])
-
-                player_ids = []
-                for member in party:
-                    join_res = requests.post(f"{SERVER}/join", json={"username": member})
-                    if join_res.status_code == 200:
-                        player_id = join_res.json().get("player_id")
-                        player_ids.append((member, player_id))
-                    else:
-                        print(f"Failed to join for {member}")
-
-                # Broadcast game start
-                for member in party:
-                    requests.post(f"{SERVER}/start_game_signal", json={"username": member})
-
-                print("Players joined:", player_ids)
-                import importlib.util
-                import sys
-                game_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "game_client.py"))
-                spec = importlib.util.spec_from_file_location("game_client", game_path)
-                game_module = importlib.util.module_from_spec(spec)
-                sys.modules["game_client"] = game_module
-                spec.loader.exec_module(game_module)
-                game_module.main()
-            except Exception as e:
-                print("Failed to start game:", e)
 
         # Modal Invite Popup
         if pending_invite_from:
@@ -387,24 +321,49 @@ def menu_screen():
             accept_btn = draw_button("Accept", 250, 300, 100, 40, GREEN)
             decline_btn = draw_button("Decline", 480, 300, 100, 40, RED)
 
-            if pygame.mouse.get_pressed()[0]:
-                pos = pygame.mouse.get_pos()
-                if accept_btn.collidepoint(pos):
-                    requests.post(f"{SERVER}/accept_invite", json={"from": pending_invite_from, "to": user_info["Username"]})
-                    pending_invite_from = None
-                    fetch_party()
-                elif decline_btn.collidepoint(pos):
-                    requests.post(f"{SERVER}/decline_invite", json={"from": pending_invite_from, "to": user_info["Username"]})
-                    pending_invite_from = None
-
+        # --- EVENT HANDLING ---
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 update_status(False)
-                pygame.quit(); sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if input_box.collidepoint(event.pos): active = True
-                else: active = False
-                if search_btn.collidepoint(event.pos):
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                pos = event.pos
+
+                # Friends: Invite buttons
+                for btn, username in invite_buttons:
+                    if btn.collidepoint(pos):
+                        if send_game_invite(username):
+                            message = f"Invited {username}!"
+                        else:
+                            message = f"Failed to invite {username}"
+
+                # Party: Reset
+                if reset_btn.collidepoint(pos):
+                    try:
+                        requests.post(f"{SERVER}/reset_party", json={"username": user_info["Username"]})
+                        fetch_party()
+                        message = "Party reset!"
+                    except:
+                        message = "Failed to reset party."
+
+                # Friend Requests: Accept/Reject
+                for acc_btn, rej_btn, sender_id in req_buttons:
+                    if acc_btn.collidepoint(pos):
+                        accept_friend(sender_id)
+                        fetch_friend_data()
+                    elif rej_btn.collidepoint(pos):
+                        reject_friend(sender_id)
+                        fetch_friend_data()
+
+                # Search
+                if input_box.collidepoint(pos):
+                    active = True
+                else:
+                    active = False
+
+                if search_btn.collidepoint(pos):
                     result = search_user_by_username(search_text)
                     if not result:
                         search_result = "not_found"
@@ -413,13 +372,108 @@ def menu_screen():
                     else:
                         search_result = result
                     message = ""
-                if reset_btn.collidepoint(event.pos):
+
+                # Send Friend Request
+                if req_btn and req_btn.collidepoint(pos):
+                    if send_friend_request(search_result["Username"]):
+                        message = "Friend request sent."
+                        search_result = None
+                        fetch_friend_data()
+                    else:
+                        message = "Failed to send request."
+
+                
+                # Start Game
+                # if start_btn.collidepoint(pos):
+                #     try:
+                #         # ✅ Fetch the full party list
+                #         party_res = requests.get(f"{SERVER}/get_party", params={"username": user_info["Username"]})
+                #         party = party_res.json().get("party", [])
+                #         if user_info["Username"] not in party:
+                #             party.append(user_info["Username"])  # ensure self is included
+
+                #         # ✅ Reset party (on Firestore, optional)
+                #         requests.post(f"{SERVER}/reset_party", json={"username": user_info["Username"]})
+
+                #         # ✅ Restart game backend (clears player state)
+                #         restart_res = requests.post(f"{SERVER}/restart")
+                #         if restart_res.status_code == 200:
+                #             print("✅ Game backend restarted.")
+                #         else:
+                #             print("❌ Failed to reset backend!")
+
+                #         # ✅ Join each party member
+                #         # ✅ Join each party member and store their assigned player_id
+                #         player_ids = {}
+                #         for member in party:
+                #             join_res = requests.post(f"{SERVER}/join", json={"username": member})
+                #             if join_res.status_code == 200:
+                #                 assigned_id = join_res.json().get("player_id")
+                #                 player_ids[member] = assigned_id
+                #                 print(f"✅ {member} joined as {assigned_id}")
+                #                 time.sleep(0.2)
+                #             else:
+                #                 print(f"❌ Failed to join {member}: {join_res.text}")
+                #     finally:
+                #         # ✅ Launch the game only for the current player
+                #         if user_info["Username"] in player_ids:
+                #             import importlib.util
+                #             game_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "game_client.py"))
+                #             spec = importlib.util.spec_from_file_location("game_client", game_path)
+                #             game_module = importlib.util.module_from_spec(spec)
+                #             sys.modules["game_client"] = game_module
+                #             spec.loader.exec_module(game_module)
+                #             game_module.main(player_ids[user_info["Username"]])
+                if start_btn.collidepoint(pos):
                     try:
-                        requests.post(f"{SERVER}/reset_party", json={"username": user_info["Username"]})
+                        # ✅ Restart backend (reset player assignments)
+                        restart_res = requests.post(f"{SERVER}/restart")
+                        if restart_res.status_code == 200:
+                            print("✅ Game backend restarted.")
+                        else:
+                            print("❌ Failed to reset backend!")
+
+                        # ✅ Get shared party list from Firestore
+                        party_res = requests.get(f"{SERVER}/shared_party")
+                        party = party_res.json().get("party", [])
+
+                        print(f"🎉 Shared party: {party}")
+
+                        # ✅ Join each player in the same order
+                        player_ids = {}
+                        for member in party:
+                            join_res = requests.post(f"{SERVER}/join", json={"username": member})
+                            if join_res.status_code == 200:
+                                assigned_id = join_res.json().get("player_id")
+                                player_ids[member] = assigned_id
+                                print(f"✅ {member} joined as {assigned_id}")
+
+                                # ✅ Launch the game only for current user
+                                if member == user_info["Username"]:
+                                    import importlib.util
+                                    game_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "game_client.py"))
+                                    spec = importlib.util.spec_from_file_location("game_client", game_path)
+                                    game_module = importlib.util.module_from_spec(spec)
+                                    sys.modules["game_client"] = game_module
+                                    spec.loader.exec_module(game_module)
+                                    game_module.main(assigned_id)
+                            else:
+                                print(f"❌ Failed to join {member}: {join_res.text}")
+
+                    except Exception as e:
+                        print(f"🔥 Error during game start: {e}")
+
+                
+                # Modal Invite Popup
+                if pending_invite_from:
+                    if accept_btn.collidepoint(pos):
+                        requests.post(f"{SERVER}/accept_invite", json={"from": pending_invite_from, "to": user_info["Username"]})
+                        pending_invite_from = None
                         fetch_party()
-                        message = "Party reset!"
-                    except:
-                        message = "Failed to reset party."
+                    elif decline_btn.collidepoint(pos):
+                        requests.post(f"{SERVER}/decline_invite", json={"from": pending_invite_from, "to": user_info["Username"]})
+                        pending_invite_from = None
+
             if event.type == pygame.KEYDOWN and active:
                 if event.key == pygame.K_BACKSPACE:
                     search_text = search_text[:-1]
