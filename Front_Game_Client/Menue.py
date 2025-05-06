@@ -10,8 +10,8 @@ pygame.init()
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 900, 750
 FONT = pygame.font.SysFont("Arial", 22)
-# SERVER = "http://127.0.0.1:5000"
-SERVER="http://10.0.0.120:5001"
+SERVER = "http://127.0.0.1:5001"
+# SERVER="http://10.0.0.120:5001"
 WHITE = (255, 255, 255)
 GRAY = (240, 240, 240)
 BLUE = (80, 120, 255)

@@ -24,7 +24,8 @@ PLAYER_SIZE = 15
 BUTTON_WIDTH = 150
 BUTTON_HEIGHT = 50
 
-SERVER_URL = "http://10.0.0.120:5001"
+SERVER_URL = "http://127.0.0.1:5001"
+# SERVER_URL = "http://10.0.0.120:5001"
 player_id = None
 
 # Animation constants
@@ -513,7 +514,7 @@ def main(passed_player_id):
                         restart_button_rect = draw_restart_button()
                         if restart_button_rect.collidepoint(mouse_pos):
                             # Send restart request to server
-                            res = requests.post(f"{SERVER_URL}/restart")
+                            res = requests.post(f"{SERVER_URL}/new_game")
                             if res.status_code == 200:
                                 state = get_state()
                                 last_state_update = time.time()
