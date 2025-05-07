@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 import random
+from BackEnd.app import app
 
 try:
     from Agent.TriviaLC import triviaAgent
@@ -37,6 +38,41 @@ hangman_cells = set()
 used_positions = set()
 total_cells = list(range(2, 88))
 
+# def init_board():
+#     global snakes, ladders, trivia_cells, hangman_cells, used_positions
+#     snakes.clear()
+#     ladders.clear()
+#     used_positions.clear()
+#     trivia_cells.clear()
+#     hangman_cells.clear()
+
+#     # Create snakes
+#     for _ in range(5):
+#         while True:
+#             start = random.randint(4, 98)
+#             end = random.randint(2, start-1)
+#             if start not in used_positions and end not in used_positions:
+#                 snakes[start] = end
+#                 used_positions.add(start)
+#                 used_positions.add(end)
+#                 break
+
+#     # Create ladders
+#     for _ in range(5):
+#         while True:
+#             start = random.randint(2, 97)
+#             end = random.randint(start+1, 99)
+#             if start not in used_positions and end not in used_positions:
+#                 ladders[start] = end
+#                 used_positions.add(start)
+#                 used_positions.add(end)
+#                 break
+
+#     # Initialize minigame cells
+#     random.shuffle(total_cells)
+#     trivia_cells.update(total_cells[:10])
+#     hangman_cells.update(total_cells[10:20])
+
 def init_board():
     """ 
     Initializes the board with obstacles: snakes, ladders, trivia, and hangman minigames.
@@ -56,7 +92,7 @@ def init_board():
     for _ in range(5):
         while True:
             start = random.randint(4, 98)
-            end = random.randint(2, start-1)
+            end = random.randint(2, start - 1)
             if start not in used_positions and end not in used_positions:
                 snakes[start] = end
                 used_positions.add(start)
@@ -65,17 +101,27 @@ def init_board():
     for _ in range(5):
         while True:
             start = random.randint(2, 97)
-            end = random.randint(start+1, 99)
+            end = random.randint(start + 1, 99)
             if start not in used_positions and end not in used_positions:
                 ladders[start] = end
                 used_positions.add(start)
                 used_positions.add(end)
                 break
 
-    # Initialize minigame cells
-    random.shuffle(total_cells)
-    trivia_cells.update(total_cells[:10])
-    hangman_cells.update(total_cells[10:20])
+    # Determine available cells for mini-games
+    available_cells = [i for i in range(2, 88) if i not in used_positions]
+    random.shuffle(available_cells)
+
+    num_mini_games = int(len(available_cells) * 0.5)  # 50% of remaining cells
+    num_trivia = int(num_mini_games * 0.9)            # 90% of those are trivia
+    num_hangman = num_mini_games - num_trivia         # Remaining are hangman
+
+    trivia_cells.update(available_cells[:num_trivia])
+    hangman_cells.update(available_cells[num_trivia:num_trivia + num_hangman])
+
+    used_positions.update(trivia_cells)
+    used_positions.update(hangman_cells)
+
 
 init_board()
 
@@ -219,11 +265,14 @@ def roll():
         mini_game = "trivia"
         # topics = ['Sports', 'literature', 'Movies', 'Celebrities', 'Music', 'general knowledge']
         topics = ['Science', 'Geography', 'Math', 'History', 'Pop Culture', 'general knowledge', 'Animals', 'Food', 'Technology', 'Literature', 'Art', 'Sports']
-
+        app.logger.info("trivia is being called!")
         content = trivia_agent.envoke(random.choice(topics))
+        app.logger.info(content)
     elif cell in hangman_cells and hangman_agent:
         mini_game = "hangman"
+        print("calling hangman agnet!")
         content = hangman_agent.envoke()
+        print(content)
 
     return jsonify({
         "roll": roll_val,

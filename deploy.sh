@@ -4,8 +4,8 @@ IMAGE_NAME="anikfarjam/staircase"
 TAG="latest"
 FULL_IMAGE="$IMAGE_NAME:$TAG"
 
-echo "Building Docker image..."
-docker build -t $FULL_IMAGE .
+echo "Building Docker image for linux/amd64..."
+docker buildx build --platform linux/amd64 -t $FULL_IMAGE --load .
 
 if [ $? -ne 0 ]; then
   echo "Build failed. Exiting."

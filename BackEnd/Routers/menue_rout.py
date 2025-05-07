@@ -4,7 +4,7 @@ from firebase_admin import credentials
 import os
 from dotenv import load_dotenv
 from firebase_admin import credentials, firestore, auth
-load_dotenv()
+load_dotenv("/app/BackEnd.env")
 cred = credentials.Certificate(os.getenv('sdk'))
 firebase_admin.initialize_app(cred)
 

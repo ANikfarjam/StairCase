@@ -15,10 +15,11 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableLambda
 import requests
 import os
+from BackEnd.app import app
 from dotenv import load_dotenv
 
-load_dotenv()
-MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
+load_dotenv("/app/Agent.env")
+MISTRAL_API_KEY = "rBzreRqYE6e1NxXF9moxvjlbfjN5W9FF"
 MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions"
 MISTRAL_MODEL = "mistral-small"  # or "mistral-medium", etc.
 
@@ -40,11 +41,11 @@ def mistral_call(prompt: str) -> str:
 
         result = response.json()
         message = result["choices"][0]["message"]["content"]
-        print("Mistral Response:", message)  
+        app.logger.info("Mistral Response:", message)  
 
         return message
     except Exception as e:
-        print("Mistral API Error:", e)
+        app.logger.info("Mistral API Error:", e)
         return "Trivia service failed." 
 
 

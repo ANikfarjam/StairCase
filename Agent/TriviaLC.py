@@ -1,4 +1,5 @@
 from Agent.agent import agent
+from BackEnd.app import app
 class triviaAgent(agent):
     """
     This is the Langchain agent for generating trivia questions and checking answers
@@ -17,9 +18,12 @@ class triviaAgent(agent):
     def envoke(self, topic):
         response = self.chain().invoke({"question": f"Generate a multiple-choice trivia question under 75 characters about {topic}. Only return the question and the 4 choices."})
         self.current_question = response
+        app.logger.info(self.current_question)
         # Extract choices from response
         lines = response.split('\n')
+        app.logger.info(lines)
         self.current_choices = [line.strip() for line in lines if line.strip().startswith(('A)', 'B)', 'C)', 'D)'))]
+        app.logger.info(self.current_choices)
         return response
         
     def check_answer(self, answer):
