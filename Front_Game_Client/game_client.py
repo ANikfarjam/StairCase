@@ -4,7 +4,7 @@ from sys import exit
 import time
 import math
 
-# Colors
+# pre defined rgb color values
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
@@ -47,7 +47,7 @@ background_x = 0
 sky_background = pygame.image.load('graphics/blue-sky.png')
 ground_background = pygame.image.load('graphics/ground.png')
 
-# User answer input for hangman and trivia minigames
+# User answer input variable for hangman and trivia minigames
 user_answer = ""
 active_modal = None  # 'trivia', 'hangman', or None
 
@@ -73,7 +73,7 @@ def roll_dice():
             - snake_ladder_start: Starting position of snake/ladder
             - snake_ladder_end: Ending position of snake/ladder
     """
-    global animating, current_anim_pos, target_anim_pos, current_player_animating, snake_ladder_animation, snake_ladder_end_pos
+    global animating, current_anim_pos, target_anim_pos, current_player_animating, snake_ladder_animation, snake_ladder_end_pos, animation_phase
     
     res = requests.post(f"{SERVER_URL}/roll", json={"player_id": player_id})
     result = res.json()
@@ -83,19 +83,21 @@ def roll_dice():
     current_player_animating = player_id
     animation_phase = 1
     
-    # Get current and target positions
+    # Get current and target board number positions. This basically
+    # sets the new position that the main event loop will constantly
+    # update and animate the player to.
+
     current_pos = result.get("before_roll", 0)
     target_pos = result.get("new_position", 0)
     
     # Check if we landed on a snake or ladder
     snake_ladder_animation = result.get("snake_ladder", False)
     if snake_ladder_animation:
+        # Get snake and ladder board number positions
         snake_ladder_end_pos = result.get("snake_ladder_end", 0)
-        # First phase: move to snake/ladder position
         current_anim_pos = list(get_cell_coords(current_pos))
         target_anim_pos = list(get_cell_coords(result.get("snake_ladder_start", 0)))
     else:
-        # Normal movement
         current_anim_pos = list(get_cell_coords(current_pos + 1))
         target_anim_pos = list(get_cell_coords(target_pos + 1))
     
@@ -116,6 +118,7 @@ def get_state():
             - game_over: Boolean indicating if game is over
             - winner: Player that won if game is over
     """
+    # Calls the backend's state endpoint which gives us game state info
     return requests.get(f"{SERVER_URL}/state").json()
 
 def get_cell_coords(pos):
@@ -127,6 +130,9 @@ def get_cell_coords(pos):
     """
     # Ensure pos is an integer
     pos = int(pos)
+
+    # Using the board position number from 1-100, this converts that 
+    # to coordinates that Pygame will use to draw where that cell is.
     row = (pos - 1) // BOARD_SIZE
     col = (pos - 1) % BOARD_SIZE
     x = col * CELL_SIZE + GRID_OFFSET + CELL_SIZE//2
@@ -163,35 +169,41 @@ def draw_board(screen, state):
     Returns: None
     """
     global background_x
-    # Update background position
+    # This part animates the background sky scrolling effect
+    # by constantly subtracting the background image's x position,
+    # then when it gets too far off the screen, it's position is 
+    # reset back in view.
     background_x -= BACKGROUND_SCROLL_SPEED
     if background_x <= -sky_background.get_width():
         background_x = 0
     
-    # Draw background (twice for seamless scrolling)
+    # Draw background sky and ground images
     screen.fill(WHITE)
     screen.blit(sky_background, (background_x, 0))
     screen.blit(sky_background, (background_x + sky_background.get_width(), 0))
     screen.blit(ground_background, (0, 700))
-    # Draw grid
+
+    # Draw 10x10 board
     for row in range(BOARD_SIZE):
         for col in range(BOARD_SIZE):
             x = col * CELL_SIZE + GRID_OFFSET
             y = (BOARD_SIZE - 1 - row) * CELL_SIZE + GRID_OFFSET
             cell_num = row * BOARD_SIZE + col + 1
 
-            color = LIGHT_BLUE if cell_num in state["trivia_cells"] else YELLOW if cell_num in state["hangman_cells"] else LIGHT_YELLOW if (row + col) % 2 == 0 else ORANGE
-            # Draw filled square
-            pygame.draw.rect(screen, color, (x, y, CELL_SIZE, CELL_SIZE))
-            # Draw square border
-            pygame.draw.rect(screen, BLACK, (x, y, CELL_SIZE, CELL_SIZE), 1)
-            
-            # Draw cell number
+            # Colors the board cells to give it a checkerboard pattern
+            # and colors cells that have minigames differently.
 
+            color = LIGHT_BLUE if cell_num in state["trivia_cells"] else YELLOW if cell_num in state["hangman_cells"] else LIGHT_YELLOW if (row + col) % 2 == 0 else ORANGE
+            pygame.draw.rect(screen, color, (x, y, CELL_SIZE, CELL_SIZE))
+            pygame.draw.rect(screen, BLACK, (x, y, CELL_SIZE, CELL_SIZE), 1)
+
+            # This part draws the position number on each cell. So the 10x10 board
+            # will have cells numbered 1-100.
             text = font.render(str(cell_num), True, BLACK)
             text_rect = text.get_rect(center=(x + CELL_SIZE//2, y + CELL_SIZE//2))
             screen.blit(text, text_rect)
             
+            # This draws tiny text on the cells have trivia and hangman minigames
             if cell_num in state["trivia_cells"]:
                 trivia_text = smaller_font.render("Trivia", True, BLACK)
                 text_rect = trivia_text.get_rect(centerx=x + CELL_SIZE//2, bottom=y + CELL_SIZE - 5)
@@ -218,7 +230,9 @@ def draw_snakes_ladders(screen, state):
             cell_num = row * BOARD_SIZE + col + 1
 
             if str(cell_num) in state["snakes"]:
-                # Draw snake head (start position)
+                # Draw snake head as a red segment point (start position)
+                # This head is the only part of the snake that will move players
+                # down if they land on it.
                 pygame.draw.circle(screen, RED, (x + CELL_SIZE//2, y + CELL_SIZE//2), 5)
                 # Draw "S" for snake
                 s_text = small_font.render("S", True, RED)
@@ -230,11 +244,12 @@ def draw_snakes_ladders(screen, state):
                 # Draw snake body (line from start to end)
                 pygame.draw.line(screen, RED, (x + CELL_SIZE//2, y + CELL_SIZE//2), 
                                (end_x, end_y), 3)
-                # Draw circle at end position
+                # Draw segment point at end position (the tail of the snake)
                 pygame.draw.circle(screen, RED, (end_x, end_y), 5)
                 
             elif str(cell_num) in state["ladders"]:
-                # Draw ladder bottom (start position)
+                # Draw ladder bottom segment point (start position)
+                # This bottom is the only part of the ladder that will move players if they land on it
                 pygame.draw.circle(screen, GREEN, (x + CELL_SIZE//2, y + CELL_SIZE//2), 5)
                 # Draw "L" for ladder
                 l_text = small_font.render("L", True, GREEN)
@@ -246,7 +261,7 @@ def draw_snakes_ladders(screen, state):
                 # Draw ladder (line from start to end)
                 pygame.draw.line(screen, GREEN, (x + CELL_SIZE//2, y + CELL_SIZE//2), 
                                (end_x, end_y), 3)
-                # Draw circle at end position
+                # Draw segment point at end position (top of the ladder)
                 pygame.draw.circle(screen, GREEN, (end_x, end_y), 5)
 
 def draw_dice_button(screen, state):
@@ -259,7 +274,8 @@ def draw_dice_button(screen, state):
 
     Returns: This returns a rectangle object for the dice button.
     """
-    # Only show button for current player
+    # This logic checks the client which player it belongs to
+    # and only shows the roll dice button for the current player's turn
     if state['current_player'] != int(player_id.split('_')[1]):
         return None
     if active_modal in ["trivia", "hangman"]:
@@ -287,16 +303,17 @@ def draw_game_info(screen, state):
 
     Returns: None
     """
-    # Draw current player
+    # Draws message on top of screen telling which player's turn it is (1 or 2)
     player_text = font.render(f"Current Player: {state['current_player']}", True, BLACK)
     screen.blit(player_text, (20, 20))
     
-    # Draw game over message
+    # When game is over (someone wins), draws message saying who won
     if state['game_over']:
         winner_text = font.render(f"Player {state['winner']} wins!", True, BLACK)
         screen.blit(winner_text, (20, 50))
     
-    # Draw message
+    # Draws all the other messages such as the dice roll result and new position
+    # the player moved to
     message_text = font.render(state['message'], True, BLACK)
     screen.blit(message_text, (20, 70))
 
@@ -311,13 +328,9 @@ def draw_player_identification(screen):
     """
     # Get player number from local player_id
     player_num = int(player_id.split('_')[1])
-    # Set color based on player number
     color = RED if player_num == 1 else BLUE
-    # Create message
     message = f"You are Player {player_num}"
-    # Render text
     text = small_font.render(message, True, color)
-    # Position at bottom left with some padding
     screen.blit(text, (20, 780 - text.get_height()))
 
 def update_animation():
@@ -334,20 +347,25 @@ def update_animation():
     if not animating:
         return
     
-    # Update position using linear interpolation
+    # Update the player's position by constantly adding or substracting a fraction of
+    # the difference (ANIMATION_SPEED = 0.1) between the current position and the target position to move to.
+
+    # draw_players() being called in the main event loop is constantly drawing the player at its current position, so this gives
+    # an animation effect. Eventually in the main event loop, the final end position will be reached.
     current_anim_pos[0] += (target_anim_pos[0] - current_anim_pos[0]) * ANIMATION_SPEED
     current_anim_pos[1] += (target_anim_pos[1] - current_anim_pos[1]) * ANIMATION_SPEED
     
-    # Check if animation is complete (close enough to target)
     if (abs(current_anim_pos[0] - target_anim_pos[0]) < 1 and 
         abs(current_anim_pos[1] - target_anim_pos[1]) < 1):
         if animation_phase == 1 and snake_ladder_animation:
-            # Start second phase of snake/ladder animation
+            # If the player lands on a snake or ladder, this basically
+            # makes the animation have a second step. The player will
+            # move to the ladder/snake (1st step), then it will move up or down (2nd step)
             animation_phase = 2
             current_anim_pos = target_anim_pos.copy()
-            target_anim_pos = list(get_cell_coords(snake_ladder_end_pos))  # Remove the +1
+            target_anim_pos = list(get_cell_coords(snake_ladder_end_pos))
         else:
-            # Animation complete
+            # Animation complete, reset booleans
             animating = False
             animation_phase = 1
             snake_ladder_animation = False
@@ -365,8 +383,13 @@ def draw_players(screen, state):
     """
     for pid, pos in state["players"].items():
         x, y = get_cell_coords(pos + 1)
+
+        # Draw player circle red if they are player 1, blue if they are player 2
         player_num = int(pid.split('_')[1])
         color = RED if player_num == 1 else BLUE
+
+        # Offset the player's circle to the left if they are player 1, right if they are player 2
+        # so if both players on same cell, they don't overlap
         offset = -10 if player_num == 1 else 10
         
         # If this player is being animated, use animation position
@@ -393,30 +416,28 @@ def draw_modal(screen, modal, modal_x, modal_y, modal_width, modal_height):
 
     Returns: None
     """
-    # Create a surface with alpha channel
     modal_surface = pygame.Surface((modal_width, modal_height), pygame.SRCALPHA)
     
-    # Draw semi-transparent background
     pygame.draw.rect(modal_surface, (200, 200, 200, 224), (0, 0, modal_width, modal_height))
     pygame.draw.rect(modal_surface, (0, 0, 0, 255), (0, 0, modal_width, modal_height), 2)
     
-    # Split text into lines and render each line
+    # Split text into lines and draw each line
     lines = modal.split("\n")
-    line_height = 25  # Space between lines
-    start_y = 20  # Start text 20 pixels from top of modal
+    line_height = 25
+    start_y = 20
     
     for i, line in enumerate(lines):
-        if i * line_height < modal_height - 40:  # Only show lines that fit in the modal
-            text = small_font.render(line, True, (0, 0, 0, 255))  # Black text with full opacity
+        if i * line_height < modal_height - 40:
+            text = small_font.render(line, True, (0, 0, 0, 255))
             text_rect = text.get_rect(centerx=modal_width//2, y=start_y + i * line_height)
             modal_surface.blit(text, text_rect)
     
     # Draw user input if trivia or hangman modal is active
     if active_modal in ["trivia", "hangman"]:
-        input_text = small_font.render(f"Your answer: {user_answer}", True, (0, 0, 255, 255))  # Blue text with full opacity
+        input_text = small_font.render(f"Your answer: {user_answer}", True, (0, 0, 255, 255))
         modal_surface.blit(input_text, (20, modal_height - 60))
     
-    continue_text = small_font.render("Press ENTER to continue...", True, (0, 0, 0, 255))  # Black text with full opacity
+    continue_text = small_font.render("Press ENTER to continue...", True, (0, 0, 0, 255))
     modal_surface.blit(continue_text, (20, modal_height - 30))
     
     screen.blit(modal_surface, (modal_x, modal_y))
@@ -437,9 +458,9 @@ def main(passed_player_id):
     state = get_state()
     modal = ""
     
-    # Add state update timer
+    # Add state update timer between both clients
     last_state_update = time.time()
-    state_update_interval = 0.5  # Update state every 0.5 seconds
+    state_update_interval = 0.5
 
     print(state['snakes'])
     print(state['ladders'])
@@ -447,7 +468,9 @@ def main(passed_player_id):
     while True:
         screen.fill(WHITE)
         
-        # Check if it's time to update state
+        # After a player rolls, this checks if it's time to update state
+        # then it fetches the latest game state info to synchronize both
+        # player's clients (so player positions on board are synced on both clients)
         current_time = time.time()
         if current_time - last_state_update >= state_update_interval:
             state = get_state()
@@ -458,11 +481,10 @@ def main(passed_player_id):
                 pygame.quit()
                 exit()
             
-            # Handle modal input
+            # Draws minigame modal when it is triggered
             if modal:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
-                        # Submit answer and close modal
                         if active_modal in ["trivia", "hangman"]:
                             # Send answer to server
                             res = requests.post(f"{SERVER_URL}/submit_answer", json={
@@ -472,26 +494,26 @@ def main(passed_player_id):
                             response = res.json()
                             print(response)
                             
+                            # For Hangman minigame
                             if response.get("game_type") == "hangman" and not response.get("correct"):
-                                # Update modal with new revealed letters and lives
                                 if "revealed" in response:
                                     modal = f"{response['revealed']}\n{response['message']}"
                                 else:
                                     modal = response['message']
-                                    # If no revealed letters, it means game is over (out of lives)
+                                    # If no revealed letters, it means game is over (out of attempts)
                                     user_answer = ""  # Clear answer
                                     state = get_state()  # Update game state
                                     last_state_update = time.time()
-                                    modal = ""  # Close modal
+                                    modal = ""
                                     active_modal = None
                             else:
-                                user_answer = ""  # Clear answer
-                                state = get_state()  # Update game state after answer
+                                user_answer = ""
+                                state = get_state()
                                 last_state_update = time.time()
                                 modal = ""  # Close modal
                                 active_modal = None
                         else:
-                            modal = ""  # Close modal
+                            modal = ""
                             active_modal = None
                     elif event.key == pygame.K_BACKSPACE:
                         user_answer = user_answer[:-1]
@@ -499,18 +521,19 @@ def main(passed_player_id):
                         user_answer += event.unicode
             
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:  # Left mouse button
+                if event.button == 1:
                     mouse_pos = pygame.mouse.get_pos()
-                    if not state['game_over']:  # Only check for dice button when game is not over
+                    if not state['game_over']:  # only draw roll dice button when game is not over
                         button_rect = draw_dice_button(screen, state)
-                        if button_rect and button_rect.collidepoint(mouse_pos) and not animating:  # Only allow rolling when not animating
+                        # Only allow rolling when not player movement is not animating
+                        if button_rect and button_rect.collidepoint(mouse_pos) and not animating:
                             result = roll_dice()
                             modal = result.get("content", "")
                             if modal:  # If there's a modal, set the active modal type
                                 active_modal = result.get("mini_game", None)
                             state = get_state()
                             last_state_update = time.time()
-                    elif state['game_over']:  # Check for restart button click when game is over
+                    elif state['game_over']:  # Draw restart button to play again when game is over
                         restart_button_rect = draw_restart_button()
                         if restart_button_rect.collidepoint(mouse_pos):
                             # Send restart request to server
@@ -534,13 +557,14 @@ def main(passed_player_id):
         if state['game_over']:
             draw_restart_button()
         
-        # Modal box
+        # Modal box for minigames
         if modal:
             # Calculate modal box dimensions and position
             modal_width = 700
             modal_height = 300
-            modal_x = (800 - modal_width) // 2  # Center horizontally
-            modal_y = (800 - modal_height) // 2  # Center vertically
+            # Center the box
+            modal_x = (800 - modal_width) // 2
+            modal_y = (800 - modal_height) // 2
             
             draw_modal(screen, modal, modal_x, modal_y, modal_width, modal_height)
         
