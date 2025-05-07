@@ -61,6 +61,3 @@ functionality is buggy. For example, you may see the Langchain LM give a word re
 
 When running the game locally, the user that logins first has to be the first
 to hit the "Start Game" button, then the other player can click Start Game and the game will work normally. Otherwise, player 2 will not load. 
-
-# deployment
-test
