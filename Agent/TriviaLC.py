@@ -1,5 +1,14 @@
 from Agent.agent import agent
 class triviaAgent(agent):
+    """
+    This is the Langchain agent for generating trivia questions and checking answers
+
+    Returns:
+        def envoke(self,topic):
+            This function returns the trivia question and the 4 choices
+        def check_answer(self,answer):
+            Returns a True or False based on whether the player's answer is correct
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.current_question = None

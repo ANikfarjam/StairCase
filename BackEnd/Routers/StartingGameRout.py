@@ -52,7 +52,7 @@ def init_board():
     trivia_cells.clear()
     hangman_cells.clear()
 
-    # Create snakes
+    # Determine which positions will have snakes and ladders
     for _ in range(5):
         while True:
             start = random.randint(4, 98)
@@ -62,8 +62,6 @@ def init_board():
                 used_positions.add(start)
                 used_positions.add(end)
                 break
-
-    # Create ladders
     for _ in range(5):
         while True:
             start = random.randint(2, 97)
@@ -181,7 +179,7 @@ def roll():
         "snake_ladder_end": None
     }
     
-    # Check for snakes and ladders
+    # Check if the player lands on snakes or ladders
     if (pos + 1) in ladders:
         old_pos = pos + 1
         animation_data["snake_ladder"] = True
@@ -212,11 +210,11 @@ def roll():
     # Switch turns
     current_player = 2 if current_player == 1 else 1
 
-    # Check for minigames
     cell = pos + 1
     mini_game = None
     content = ""
 
+    # Check for minigames
     if cell in trivia_cells and trivia_agent:
         mini_game = "trivia"
         # topics = ['Sports', 'literature', 'Movies', 'Celebrities', 'Music', 'general knowledge']
@@ -237,7 +235,7 @@ def roll():
         "game_over": game_over,
         "winner": winner,
         "current_player": current_player,
-        **animation_data  # Include animation data in response
+        **animation_data
     })
 
 @start_BP.route("/state", methods=["GET"])
@@ -260,7 +258,6 @@ def state():
         - winner: Player number that won the game
         - message: Current game message
     """
-    # Convert snake and ladder keys to strings
     snakes_str = {str(k): str(v) for k, v in snakes.items()}
     ladders_str = {str(k): str(v) for k, v in ladders.items()}
     
@@ -313,7 +310,6 @@ def submit_answer():
             print(f"Invalid player_id: {player_id}")
             return jsonify({"error": "Invalid player"}), 400
             
-        # Check if it's a trivia question
         if not trivia_agent and not hangman_agent:
             print("No game agents available")
             return jsonify({"error": "No game agents available"}), 500
