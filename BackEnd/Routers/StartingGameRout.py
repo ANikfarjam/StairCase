@@ -5,11 +5,11 @@ try:
     from Agent.TriviaLC import triviaAgent
     from Agent.HangmanLC import HangMan
     trivia_agent = triviaAgent()
-    hangman_agent = HangMan()
+    # hangman_agent = HangMan()
 except Exception as e:
     print("Error initializing agents:", e)
     trivia_agent = None
-    hangman_agent = None
+    # hangman_agent = None
 
 start_BP = Blueprint("Start_Game", __name__)
 
@@ -24,26 +24,33 @@ message_timer = 0
 message_duration = 120
 
 # Hangman game state
-hangman_words = {}
-hangman_revealed = {}
-hangman_lives = {}
+# hangman_words = {}
+# hangman_revealed = {}
+# hangman_lives = {}
 
 # Board configuration
 BOARD_SIZE = 10
 snakes = {}
 ladders = {}
 trivia_cells = set()
-hangman_cells = set()
+# hangman_cells = set()
 used_positions = set()
 total_cells = list(range(2, 88))
 
 def init_board():
-    global snakes, ladders, trivia_cells, hangman_cells, used_positions
+    """ 
+    Initializes the board with obstacles: snakes, ladders, trivia, and hangman minigames.
+
+    Parameters: None
+
+    Returns: None
+    """
+    global snakes, ladders, trivia_cells, used_positions
     snakes.clear()
     ladders.clear()
     used_positions.clear()
     trivia_cells.clear()
-    hangman_cells.clear()
+    # hangman_cells.clear()
 
     # Create snakes
     for _ in range(5):
@@ -69,8 +76,8 @@ def init_board():
 
     # Initialize minigame cells
     random.shuffle(total_cells)
-    trivia_cells.update(total_cells[:10])
-    hangman_cells.update(total_cells[10:20])
+    trivia_cells.update(total_cells[:15])
+    # hangman_cells.update(total_cells[10:20])
 
 init_board()
 
@@ -100,6 +107,13 @@ init_board()
 
 @start_BP.route("/join", methods=["POST"])
 def join():
+    """ 
+    Handles joining the game for 2 player support
+
+    Parameters: None
+
+    Returns: A json object with the player_id
+    """
     try:
         data = request.get_json()
         username = data.get("username", f"user_{len(players)+1}")
@@ -116,14 +130,31 @@ def join():
         print("❌ ERROR in /join:", str(e))
         return jsonify({"error": "Server failed"}), 500
 
-"""
-Roll Dice
-Calculates and return the new position of each player
-triggers game events
-returns the contents of the mini games
-"""
 @start_BP.route("/roll", methods=["POST"])
 def roll():
+    """
+    Handles the rolling dice logic:
+    Calculates and return the new position of each player,
+    triggers game events of moving down a snake or moving up a ladder,
+    and returns the contents of the mini games.
+
+    Parameters: None
+    
+    Returns: A JSON dictionaryresponse containing:
+            - roll: The dice roll value (1-6)
+            - before_roll: Player's position before the roll
+            - new_position: Player's position after the roll
+            - mini_game: Type of minigame if landed on one ('trivia' or 'hangman')
+            - content: Prompt from minigame when landed on
+            - message: Game message to display
+            - game_over: Boolean indicating if game is over
+            - winner: Player number that won the game
+            - current_player: Current player's turn
+            - animation_data: positions of initial and ending positions of snakes and ladders for animation movement
+                - snake_ladder: Boolean indicating if landed on snake/ladder
+                - snake_ladder_start: Starting position of snake/ladder
+                - snake_ladder_end: Ending position of snake/ladder
+    """
     global current_player, game_over, winner, message
     data = request.get_json()
     player_id = data.get("player_id")
@@ -192,9 +223,9 @@ def roll():
         topics = ['Science', 'Geography', 'Math', 'History', 'Pop Culture', 'general knowledge', 'Animals', 'Food', 'Technology', 'Literature', 'Art', 'Sports']
 
         content = trivia_agent.envoke(random.choice(topics))
-    elif cell in hangman_cells and hangman_agent:
-        mini_game = "hangman"
-        content = hangman_agent.envoke()
+    # elif cell in hangman_cells and hangman_agent:
+    #     mini_game = "hangman"
+    #     content = hangman_agent.envoke()
 
     return jsonify({
         "roll": roll_val,
@@ -208,13 +239,27 @@ def roll():
         "current_player": current_player,
         **animation_data  # Include animation data in response
     })
-"""
-Return the board states
-snakes and ladders positoins
-trivia and hangman minigame positions
-"""
+
 @start_BP.route("/state", methods=["GET"])
 def state():
+    """
+    Returns the board states, including snake and ladder positions,
+    trivia and hangman cell positions, the current player's turn,
+    whether the game is over, the winner, and the current message.
+
+    Parameters: None
+
+    Returns: A JSON dictionary response containing:
+        - players: Player positions
+        - snakes: Snake positions
+        - ladders: Ladder positions
+        - trivia_cells: Trivia cell positions
+        - hangman_cells: Hangman cell positions
+        - current_player: Current player's turn
+        - game_over: Boolean indicating if game is over
+        - winner: Player number that won the game
+        - message: Current game message
+    """
     # Convert snake and ladder keys to strings
     snakes_str = {str(k): str(v) for k, v in snakes.items()}
     ladders_str = {str(k): str(v) for k, v in ladders.items()}
@@ -224,7 +269,7 @@ def state():
         "snakes": snakes_str,
         "ladders": ladders_str,
         "trivia_cells": list(trivia_cells),
-        "hangman_cells": list(hangman_cells),
+        # "hangman_cells": list(hangman_cells),
         "current_player": current_player,
         "game_over": game_over,
         "winner": winner,
@@ -269,7 +314,7 @@ def submit_answer():
             return jsonify({"error": "Invalid player"}), 400
             
         # Check if it's a trivia question
-        if not trivia_agent and not hangman_agent:
+        if not trivia_agent:
             print("No game agents available")
             return jsonify({"error": "No game agents available"}), 500
             
@@ -299,52 +344,52 @@ def submit_answer():
                 })
             
             # Handle hangman answer
-            elif hangman_agent and current_pos + 1 in hangman_cells:
-                if not hangman_agent.current_word:
-                    # Initialize hangman game
-                    revealed = hangman_agent.envoke()
-                    return jsonify({
-                        "game_type": "hangman",
-                        "revealed": revealed,
-                        "lives": hangman_agent.lives,
-                        "message": "Guess the word!"
-                    })
+            # elif hangman_agent and current_pos + 1 in hangman_cells:
+            #     if not hangman_agent.current_word:
+            #         # Initialize hangman game
+            #         revealed = hangman_agent.envoke()
+            #         return jsonify({
+            #             "game_type": "hangman",
+            #             "revealed": revealed,
+            #             "lives": hangman_agent.lives,
+            #             "message": "Guess the word!"
+            #         })
                 
-                # Check hangman answer
-                is_correct = hangman_agent.check_answer(answer)
+            #     # Check hangman answer
+            #     is_correct = hangman_agent.check_answer(answer)
                 
-                if is_correct:
-                    new_pos = min(current_pos + 10, 98)
-                    message = f"Correct! Player {player_answered} moves forward to position {new_pos + 1}!"
-                    players[player_id] = new_pos
-                    hangman_agent.reset()
-                    return jsonify({
-                        "correct": True,
-                        "message": message,
-                        "new_position": new_pos,
-                        "game_type": "hangman"
-                    })
-                else:
-                    game_state = hangman_agent.get_game_state()
-                    if hangman_agent.lives <= 0:
-                        new_pos = max(current_pos - 10, 0)
-                        message = f"Out of lives! Player {player_answered} moves back to position {new_pos + 1}!"
-                        players[player_id] = new_pos
-                        hangman_agent.reset()
-                        return jsonify({
-                            "correct": False,
-                            "message": message,
-                            "new_position": new_pos,
-                            "game_type": "hangman"
-                        })
-                    else:
-                        return jsonify({
-                            "correct": False,
-                            "revealed": game_state["revealed"],
-                            "lives": game_state["lives"],
-                            "message": game_state["message"],
-                            "game_type": "hangman"
-                        })
+            #     if is_correct:
+            #         new_pos = min(current_pos + 10, 98)
+            #         message = f"Correct! Player {player_answered} moves forward to position {new_pos + 1}!"
+            #         players[player_id] = new_pos
+            #         hangman_agent.reset()
+            #         return jsonify({
+            #             "correct": True,
+            #             "message": message,
+            #             "new_position": new_pos,
+            #             "game_type": "hangman"
+            #         })
+            #     else:
+            #         game_state = hangman_agent.get_game_state()
+            #         if hangman_agent.lives <= 0:
+            #             new_pos = max(current_pos - 10, 0)
+            #             message = f"Out of lives! Player {player_answered} moves back to position {new_pos + 1}!"
+            #             players[player_id] = new_pos
+            #             hangman_agent.reset()
+            #             return jsonify({
+            #                 "correct": False,
+            #                 "message": message,
+            #                 "new_position": new_pos,
+            #                 "game_type": "hangman"
+            #             })
+            #         else:
+            #             return jsonify({
+            #                 "correct": False,
+            #                 "revealed": game_state["revealed"],
+            #                 "lives": game_state["lives"],
+            #                 "message": game_state["message"],
+            #                 "game_type": "hangman"
+            #             })
             
             return jsonify({"error": "Not in a minigame cell"}), 400
             
@@ -376,7 +421,14 @@ def restart_game():
 
 @start_BP.route('/new_game', methods=['POST'])
 def new_game():
-    global player1_pos, player2_pos, current_player, game_over, winner, message, message_timer, animating, current_anim_pos, target_anim_pos, trivia_cells, hangman_cells
+    """
+    Restarts the game so that the players can play again
+
+    Parameters: None
+
+    Returns: None
+    """
+    global player1_pos, player2_pos, current_player, game_over, winner, message, message_timer, animating, current_anim_pos, target_anim_pos, trivia_cells
 
     for pid, pos in players.items():
         players[pid] = 0

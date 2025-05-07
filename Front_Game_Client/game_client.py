@@ -180,7 +180,7 @@ def draw_board(screen, state):
             y = (BOARD_SIZE - 1 - row) * CELL_SIZE + GRID_OFFSET
             cell_num = row * BOARD_SIZE + col + 1
 
-            color = LIGHT_BLUE if cell_num in state["trivia_cells"] else YELLOW if cell_num in state["hangman_cells"] else LIGHT_YELLOW if (row + col) % 2 == 0 else ORANGE
+            color = LIGHT_BLUE if cell_num in state["trivia_cells"] else LIGHT_YELLOW if (row + col) % 2 == 0 else ORANGE
             # Draw filled square
             pygame.draw.rect(screen, color, (x, y, CELL_SIZE, CELL_SIZE))
             # Draw square border
@@ -197,10 +197,10 @@ def draw_board(screen, state):
                 text_rect = trivia_text.get_rect(centerx=x + CELL_SIZE//2, bottom=y + CELL_SIZE - 5)
                 screen.blit(trivia_text, text_rect)
 
-            if cell_num in state["hangman_cells"]:
-                hangman_text = smaller_font.render("Hangman", True, BLACK)
-                text_rect = hangman_text.get_rect(centerx=x + CELL_SIZE//2, bottom=y + CELL_SIZE - 5)
-                screen.blit(hangman_text, text_rect)
+            # if cell_num in state["hangman_cells"]:
+            #     hangman_text = smaller_font.render("Hangman", True, BLACK)
+            #     text_rect = hangman_text.get_rect(centerx=x + CELL_SIZE//2, bottom=y + CELL_SIZE - 5)
+            #     screen.blit(hangman_text, text_rect)
 
 def draw_snakes_ladders(screen, state):
     """ 
@@ -412,7 +412,7 @@ def draw_modal(screen, modal, modal_x, modal_y, modal_width, modal_height):
             modal_surface.blit(text, text_rect)
     
     # Draw user input if trivia or hangman modal is active
-    if active_modal in ["trivia", "hangman"]:
+    if active_modal in ["trivia"]:
         input_text = small_font.render(f"Your answer: {user_answer}", True, (0, 0, 255, 255))  # Blue text with full opacity
         modal_surface.blit(input_text, (20, modal_height - 60))
     
@@ -423,6 +423,15 @@ def draw_modal(screen, modal, modal_x, modal_y, modal_width, modal_height):
 
 
 def main(passed_player_id):
+    """
+    Main function that initializes Pygame, sets up the game, runs the game loop.
+
+    Parameters: passed_player_id (str): The player ID of the current player. This is used to identify
+                which player is which on each client, and is used for turn handling, rolling dice,
+                submitting minigame answers. 
+
+    Returns: None
+    """
     global player_id, font, small_font, smaller_font, user_answer, active_modal
     player_id = passed_player_id
     print(player_id)
@@ -433,7 +442,6 @@ def main(passed_player_id):
     small_font = pygame.font.SysFont(None, 24)
     smaller_font = pygame.font.SysFont(None, 14)
     
-   
     state = get_state()
     modal = ""
     
@@ -463,36 +471,18 @@ def main(passed_player_id):
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
                         # Submit answer and close modal
-                        if active_modal in ["trivia", "hangman"]:
+                        if active_modal == "trivia":
                             # Send answer to server
                             res = requests.post(f"{SERVER_URL}/submit_answer", json={
                                 "player_id": player_id,
                                 "answer": user_answer
                             })
-                            response = res.json()
-                            print(response)
-                            
-                            if response.get("game_type") == "hangman" and not response.get("correct"):
-                                # Update modal with new revealed letters and lives
-                                if "revealed" in response:
-                                    modal = f"{response['revealed']}\n{response['message']}"
-                                else:
-                                    modal = response['message']
-                                    # If no revealed letters, it means game is over (out of lives)
-                                    user_answer = ""  # Clear answer
-                                    state = get_state()  # Update game state
-                                    last_state_update = time.time()
-                                    modal = ""  # Close modal
-                                    active_modal = None
-                            else:
-                                user_answer = ""  # Clear answer
-                                state = get_state()  # Update game state after answer
-                                last_state_update = time.time()
-                                modal = ""  # Close modal
-                                active_modal = None
-                        else:
-                            modal = ""  # Close modal
-                            active_modal = None
+                            print(res.json())
+                            user_answer = ""  # Clear answer
+                            state = get_state()  # Update game state after answer
+                            last_state_update = time.time()
+                        modal = ""  # Close modal
+                        active_modal = None
                     elif event.key == pygame.K_BACKSPACE:
                         user_answer = user_answer[:-1]
                     elif event.unicode.isprintable():

@@ -11,12 +11,14 @@ class HangMan(agent):
     def envoke(self):
         response = self.chain().invoke({"question": "Generate a random word for a hangman game. Only give me one word response!"})
         self.current_word = response.strip().upper()
+        print(self.current_word)
         # Initialize revealed letters with 2 random letters shown
         self.revealed = list("_" * len(self.current_word))
         indices = random.sample(range(len(self.current_word)), 2)
         for i in indices:
             self.revealed[i] = self.current_word[i]
         self.revealed = "".join(self.revealed)
+        print(self.revealed)
         return self.revealed
         
     def check_answer(self, answer):
