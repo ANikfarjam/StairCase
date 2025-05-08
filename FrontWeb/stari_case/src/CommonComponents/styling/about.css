@@ -1,0 +1,83 @@
+.about-container {
+    padding: 4rem 2rem;
+    background: linear-gradient(to bottom right, #fff0f5, #fde2e4);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  
+  .about-panel {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    background-color: #fdf7f2;
+    border-radius: 24px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    max-width: 1100px;
+    width: 100%;
+    padding: 2rem;
+    gap: 2rem;
+    align-items: flex-start;
+  }
+  
+  .about-text {
+    flex: 2;
+    color: #333;
+  }
+  
+  .about-text h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    color: #5a3f36;
+  }
+  
+  .brand-name {
+    color: #ec4899;
+  }
+  
+  .about-section {
+    margin-top: 2rem;
+  }
+  
+  .about-section h2 {
+    font-size: 1.5rem;
+    color: #7b3f3f;
+    margin-bottom: 0.5rem;
+  }
+  
+  .about-section p {
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+  
+  .about_image {
+    flex: 1;
+    min-width: 220px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  
+  .about_image img {
+    width: 100%;
+    max-width: 200px;
+    height: auto;
+    object-fit: contain;
+    margin-top: 1rem;
+  }
+  
+  /* Responsive for small screens */
+  @media (max-width: 768px) {
+    .about-panel {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+  
+    .about_image {
+      justify-content: center;
+      margin-top: 2rem;
+    }
+  }
+  

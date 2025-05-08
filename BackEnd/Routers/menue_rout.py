@@ -4,10 +4,17 @@ from firebase_admin import credentials
 import os
 from dotenv import load_dotenv
 from firebase_admin import credentials, firestore, auth
-load_dotenv("/app/BackEnd.env")
-cred = credentials.Certificate(os.getenv('sdk'))
+from google.cloud.firestore_v1 import FieldFilter
+from BackEnd.app import app
+# load_dotenv("/app/BackEnd.env")
+# cred = credentials.Certificate(os.getenv('sdk'))
+# firebase_admin.initialize_app(cred)
+app.logger.info("loading FBSDK")
+with open("/app/BackEnd/FB_Admin_SDK.json", "r") as f:
+    app.logger.info(f.read())
+cred = credentials.Certificate("/app/BackEnd/FB_Admin_SDK.json")
+app.logger.info(f"cred {cred != None}")
 firebase_admin.initialize_app(cred)
-
 menue_bp = Blueprint('Menue',__name__)
 # Firestore DB
 db = firestore.client()
@@ -23,7 +30,7 @@ def set_status():
         if username is None or status is None:
             return jsonify({"error": "Missing username or status"}), 400
 
-        query = db.collection("Users").where("Username", "==", username).limit(1).stream()
+        query = db.collection("Users").where(filter=("Username", "==", username)).limit(1).stream()
         user_doc = next(query, None)
         if not user_doc:
             return jsonify({"error": "User not found"}), 404
@@ -40,6 +47,7 @@ def set_status():
 def get_username_by_id():
     try:
         doc_id = request.args.get('doc_id')
+        app.logger(f"Doc ID ...{str(doc_id[:3])} fetched!")
         if not doc_id:
             return jsonify({"error": "Missing doc_id"}), 400
         doc = db.collection("Users").document(doc_id).get()
@@ -55,15 +63,26 @@ def get_username_by_id():
 def get_usr_info():
     try:
         # Get the username from query parameter (sent from frontend)
-        username = request.args.get('user_id')  # still using ?user_id= but it's actually a username
+        username = request.args.get('user_id')  
+        app.logger.info(f"username: {username} is attempting to log in") #for debuging purposes
         if not username:
             return jsonify({"error": "Missing user_id (username) parameter"}), 400
 
         # Query the Users collection where Username matches
         users_ref = db.collection("Users")
-        query = users_ref.where("Username", "==", username).limit(1).stream()
-        user_doc = next(query, None)
-
+        app.logger.info("Collection Loaded!")
+        # query = users_ref.where(filter=("Username", "==", username)).limit(1).stream()
+        # user_doc = next(query, None)
+        try:
+            #query = users_ref.where(filter=("Username", "==", username)).limit(1).stream()
+            query = users_ref.where(filter=FieldFilter("Username", "==", username)).limit(1).stream()
+            app.logger.info("Firestore query started")
+            user_doc = next(query, None)
+            app.logger.info("Document fetched:", user_doc is not None)
+        except Exception as fe:
+            app.logger.error("Firestore query failed:", exc_info=True)
+            return jsonify({"error": "Firestore query failed", "details": str(fe)}), 500
+        app.logger.info("user data loaded!")
         if not user_doc:
             return jsonify({"error": "User not found"}), 404
 
@@ -87,13 +106,14 @@ def login_auth():
     try:
         data = request.get_json()
         id_token = data.get('idToken')
-
+        app.logger.info(f"Token create {id_token != None}")
         if not id_token:
             return jsonify({'error': 'Missing ID token'}), 400
 
         # Verify token with Firebase
         decoded_token = auth.verify_id_token(id_token)
         uid = decoded_token['uid']
+        app.logger.info("uid token varified!")
 
         # Optionally get user details
         user = auth.get_user(uid)

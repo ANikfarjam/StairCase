@@ -2,3 +2,4 @@ LCH/
 llama32/
 __pycache__/
 .env
+BackEnd/FB_Admin_SDK.json

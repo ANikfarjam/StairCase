@@ -6,6 +6,7 @@ import time
 import atexit
 import signal
 import Front_Game_Client.game_client
+
 pygame.init()
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 900, 750

@@ -5,6 +5,7 @@ import LandingPage from './CommonComponents/landing_page'; // make sure the path
 import LoginPage from './CommonComponents/log_in';
 import SignUpPage from './CommonComponents/sign_up';
 import Dashboard from './CommonComponents/dashboard';
+import AboutPage from './CommonComponents/about';
 function App() {
   return (
     <Router>
@@ -12,6 +13,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage/>}/>
+        <Route path="/about" element={<AboutPage/>}/>
         <Route path="/signup" element={<SignUpPage/>}/>
         <Route path="/dashboard" element={<Dashboard/>}/>
         {/* Add About, Login, Signup routes here */}

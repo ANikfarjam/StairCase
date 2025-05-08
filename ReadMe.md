@@ -1,9 +1,10 @@
 ![Malro Pelleh](./Front/introImg.png)
-
 ### <span style="color: green">Staircase</span>
 
+WebURL: https://stair-case.vercel.app/
+
 ### <span style="color: green">Group Members</span>
-Brendan Ly and Ashkan Nikfarjam
+Ashkan Nikfarjam, Brendan Ly 
 
 ### <span style="color: green">Staircase</span>
 
@@ -23,36 +24,56 @@ To run this game locally, clone the project and move into its root directory
 Then, 
 
 Run the backend by running 
-╰─ python3 -m BackEnd.    stairCase_Server                                                                  ─╯
+
+╰─ python3 -m BackEnd.stairCase_Server                                                                  ─╯
+
 Then in two seperate terminals, run 
+
 ╰─ python3 -m Front_Game_Client.Menue                                                                   ─╯
+
 in each. 
 
-In the Menu login, login using these two users, the password is the same for each.
+User Need to sign Up in our website to be entered to our database and access the game contents.
 
-user: dev2 , DevA
-pass: 123123asdasd
+
 
 Then, invite each other by username if necessary, then start the game.
 
 ### <span style="color: green">File Structure OverView</span>
 BackEnd/
+
 ├── Routers/ # Contains Flask route handlers for game logic
+
 ├── stairCase_Server.py # Main Flask server entry point
+
 └── FB_Admin_SDK.json # Firebase configuration for user management
+
 Front_Game_Client/
+
 ├── game_client.py # Main Pygame game client implementation
+
 ├── Menue.py # Game menu and user interface
+
 └── tests/ # Unit tests for game client
+
 Agent/
+
+├── Ageny.Py # SuperClass for the Agents
+
 ├── TriviaLC.py # Trivia minigame implementation using LangChain
+
 ├── HangmanLC.py # Hangman minigame implementation using LangChain (unfinished)
+
 └── langChainConfig.py # LangChain configuration and setup
+
 FrontWeb/ # React-based web interface
+
 ├── src/ # Source code for web components
-└── public/ # Static assets for web interface
+
 graphics/ # Game assets and images
+
 ├── blue-sky.png # Background image
+
 └── ground.png # Ground texture
 
 ### <span style="color: green">Known Bugs</span>
@@ -61,3 +82,13 @@ functionality is buggy. For example, you may see the Langchain LM give a word re
 
 When running the game locally, the user that logins first has to be the first
 to hit the "Start Game" button, then the other player can click Start Game and the game will work normally. Otherwise, player 2 will not load. 
+
+
+### To run the game clienet in terminal in you poject directort run:
+
+```
+python3 -m Front_Game_Client.Menue
+```
+Or simply download it
+
+since the game is deployed to cloud you dont need to run flask server anymore. 

@@ -24,8 +24,8 @@ PLAYER_SIZE = 15
 BUTTON_WIDTH = 150
 BUTTON_HEIGHT = 50
 
-SERVER_URL = "https://p01--staircase--6drvtj7hxs94.code.run"
-# SERVER_URL = "http://10.0.0.120:5001"
+SERVER_URL =  "https://p01--staircase--6drvtj7hxs94.code.run"
+#SERVER_URL = "http://127.0.0.1:5001"
 player_id = None
 
 # Animation constants

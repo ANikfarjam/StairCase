@@ -12,7 +12,7 @@ const LandingPage = () => {
           Welcome to <span className="landing-highlight">StairCase</span>
         </h1>
         <p className="landing-subtext">
-          A modern twist on the classic Snakes & Ladders board game, now with interactive mini challenges such as Hangman and Trivia Games powered by our LangChain Agnets and utilizing Llama 2.3 Large Language Model(meta)!
+          A modern twist on the classic Snakes & Ladders board game, now with interactive mini challenges such as Hangman and Trivia Games powered by our LangChain Agnets and utilizing Mistral AI Large Language Model(Open Source LLM)!
         </p>
         <Link to="/login" className="landing-button">Start Playing</Link>
       </section>
