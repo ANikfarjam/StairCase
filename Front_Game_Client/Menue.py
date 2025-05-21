@@ -5,8 +5,8 @@ import os
 import time
 import atexit
 import signal
-import Front_Game_Client.game_client
-
+# import Front_Game_Client.game_client
+#import game_client  # needed to include in PyInstaller bundle
 pygame.init()
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 900, 750

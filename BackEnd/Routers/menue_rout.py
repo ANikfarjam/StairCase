@@ -28,18 +28,21 @@ def set_status():
         status = data.get("status")
 
         if username is None or status is None:
+            app.logger.warning("Missing username or status in /set_status")
             return jsonify({"error": "Missing username or status"}), 400
 
-        query = db.collection("Users").where(filter=("Username", "==", username)).limit(1).stream()
+        query = db.collection("Users").where("Username", "==", username).limit(1).stream()
         user_doc = next(query, None)
         if not user_doc:
+            app.logger.warning(f"User {username} not found during status update")
             return jsonify({"error": "User not found"}), 404
 
-        user_id = user_doc.id
-        db.collection("Users").document(user_id).update({"Status": status})
-
+        db.collection("Users").document(user_doc.id).update({"Status": status})
+        app.logger.info(f"Status updated for {username} to {status}")
         return jsonify({"message": f"Status updated to {status}"}), 200
+
     except Exception as e:
+        app.logger.error(f"Failed to set status for {username}: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 #get usersername by id for communication
@@ -78,7 +81,7 @@ def get_usr_info():
             query = users_ref.where(filter=FieldFilter("Username", "==", username)).limit(1).stream()
             app.logger.info("Firestore query started")
             user_doc = next(query, None)
-            app.logger.info("Document fetched:", user_doc is not None)
+            app.logger.info("Document fetched: %s", user_doc is not None)
         except Exception as fe:
             app.logger.error("Firestore query failed:", exc_info=True)
             return jsonify({"error": "Firestore query failed", "details": str(fe)}), 500
